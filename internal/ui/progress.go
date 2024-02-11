@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"fmt"
 	"os"
 	"time"
 
@@ -12,9 +11,11 @@ import (
 
 type tickMsg time.Time
 type MsgComplete struct{}
+type MsgQuit struct{}
 type model struct {
-	progress progress.Model
-	title    string
+	progress  progress.Model
+	title     string
+	didFinish bool
 }
 
 func (m model) Init() tea.Cmd {
@@ -23,7 +24,7 @@ func (m model) Init() tea.Cmd {
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case MsgQuit:
 		return m, tea.Quit
 	case tea.WindowSizeMsg:
 		m.progress.Width = msg.Width
@@ -36,8 +37,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 	case progress.FrameMsg:
 		if m.progress.Percent() == 1 && !m.progress.IsAnimating() {
-			fmt.Print("\033[K\033[A\033[K") // Clear the current line and move up
-			return m, tea.Quit
+			m.didFinish = true
+			return m.Update(MsgQuit{})
 		}
 		progressModel, cmd := m.progress.Update(msg)
 		m.progress = progressModel.(progress.Model)
@@ -48,11 +49,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	var helpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#626262")).Render
+	if m.didFinish {
+		return "" // Clear the screen
+	}
+	var helpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
+	var boldStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#626262")).Bold(true)
 	return lipgloss.JoinVertical(
 		lipgloss.Top,
-		helpStyle(m.title),
-		m.progress.View())
+		helpStyle.Render(m.title),
+		m.progress.View(),
+		helpStyle.Render("Current provider: "+boldStyle.Render("Zipper")),
+	)
 }
 
 func (t tickMsg) Second() float64 {

@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"envi/internal/llog"
 	"log"
 	"os"
 
@@ -53,7 +52,6 @@ func getApplicationDataPath() string {
 }
 
 func init() {
-	llog.BgPrimaryColorFullWidth("Enviiiiiiiiiiii 😁")
 	RootCmd.AddCommand(PullCmd)
 	RootCmd.AddCommand(AuthCmd)
 }
