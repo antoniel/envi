@@ -1,14 +1,20 @@
 package ui
 
 import (
+	"fmt"
+	"os"
 	"time"
 
 	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
+type tickMsg time.Time
+type MsgComplete struct{}
 type model struct {
 	progress progress.Model
+	title    string
 }
 
 func (m model) Init() tea.Cmd {
@@ -30,6 +36,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 	case progress.FrameMsg:
 		if m.progress.Percent() == 1 && !m.progress.IsAnimating() {
+			fmt.Print("\033[K\033[A\033[K") // Clear the current line and move up
 			return m, tea.Quit
 		}
 		progressModel, cmd := m.progress.Update(msg)
@@ -41,10 +48,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	return m.progress.View()
+	var helpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#626262")).Render
+	return lipgloss.JoinVertical(
+		lipgloss.Top,
+		helpStyle(m.title),
+		m.progress.View())
 }
-
-type tickMsg time.Time
 
 func (t tickMsg) Second() float64 {
 	return time.Since(time.Time(t)).Seconds()
@@ -56,24 +65,28 @@ func tickCmd() tea.Cmd {
 	})
 }
 
-type ProgressBarCmd struct {
-	program *tea.Program
-}
-
-type MsgComplete struct{}
-
-func (p *ProgressBarCmd) Complete() {
-	p.program.Send(MsgComplete{})
-}
-
-func ProgressBarProgram() *tea.Program {
+func ProgressBar(title string) func() {
 	defaultOpts := []progress.Option{
 		progress.WithDefaultGradient(),
 		progress.WithoutPercentage(),
 	}
-	m := model{
-		progress: progress.New(defaultOpts...),
-	}
+
+	doneCh := make(chan bool)
+	m := model{progress: progress.New(defaultOpts...), title: title}
 	program := tea.NewProgram(m)
-	return program
+	go goRunProgram(program, doneCh)
+
+	return func() {
+		program.Send(MsgComplete{})
+		<-doneCh // Just wait until goRunProgram is done
+	}
+}
+
+func goRunProgram(program *tea.Program, doneCh chan bool) {
+	_, err := program.Run()
+	if err != nil {
+		os.Exit(1)
+	}
+	doneCh <- true
+	close(doneCh)
 }

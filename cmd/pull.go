@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"envi/internal/env_util"
+	"envi/internal/ui"
 	"errors"
 	"fmt"
 	"log"
@@ -30,7 +31,10 @@ func PullCmdFunc(cmd *cobra.Command, args []string) error {
 		log.Fatal(err)
 	}
 
+	doneFn := ui.ProgressBar("Fetching remote .env file...")
 	remoteEnvValues, err := fetchRemoteEnvValues(callbackURL, accessToken)
+	doneFn()
+
 	if err != nil {
 		log.Fatal(err)
 	}
