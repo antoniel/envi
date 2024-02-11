@@ -1,6 +1,10 @@
 package cmd
 
 import (
+	"envi/internal/llog"
+	"fmt"
+
+	l "github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 )
 
@@ -12,9 +16,45 @@ var AuthCmd = &cobra.Command{
 
 func init() {
 	AuthCmd.AddCommand(AuthLoginCmd)
+	AuthCmd.PersistentFlags().StringP("token", "t", "", "Token")
 }
 
 func AuthCmdE(cmd *cobra.Command, args []string) error {
-	cmd.Help()
+	if !AuthIsLogged() {
+		fmt.Println(
+			llog.StyleTitle().
+				MarginBottom(1).
+				Render("Session not found"))
+		AuthLoginCmd.RunE(cmd, args)
+		return nil
+	}
+	showLoginMessage()
 	return nil
+}
+
+func showLoginMessage() {
+
+	// Estilos
+	var styleTitle = llog.StyleTitle()
+
+	var styleText = func() l.Style {
+		return l.NewStyle().
+			Foreground(l.Color("#FAFAFA")).
+			PaddingLeft(2).
+			MarginBottom(1)
+	}
+	cmd := l.NewStyle().Foreground(l.Color("#AD58B4"))
+
+	title := styleTitle.Render("Authenticated with Zipper:")
+	loginStatus := styleText().Render("You are currently logged using the Zipper provider.")
+	logoutMessage := styleText().Italic(true).Render("To log out, use", cmd.Render("`envi auth logout`."))
+
+	message := l.JoinVertical(
+		l.Left,
+		title,
+		loginStatus,
+		logoutMessage,
+	)
+
+	fmt.Println(message)
 }

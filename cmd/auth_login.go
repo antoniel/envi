@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"envi/internal/llog"
 	"envi/internal/storage"
 	form "envi/internal/ui"
 	"fmt"
@@ -41,17 +42,8 @@ func AuthCmdRunE(cmd *cobra.Command, args []string) error {
 }
 
 func showSuccessMessage() {
-	var styleTitle = lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("#FAFAFA")).
-		Background(lipgloss.Color("#7D56F4")).
-		Padding(0, 1).
-		MarginBottom(1)
-
-	var styleCommand = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#AD58B4")).
-		Bold(true).
-		PaddingLeft(2)
+	var styleTitle = llog.StyleTitle()
+	var styleCommand = llog.StyleCommand()
 
 	var styleText = lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#FAFAFA")).
@@ -121,4 +113,12 @@ func getPersistedToken(path string) (string, error) {
 		return "", err
 	}
 	return string(token), nil
+}
+
+func AuthIsLogged() bool {
+	persistedToken, err := getPersistedToken(storage.GetApplicationDataPath())
+	if err != nil {
+		return false
+	}
+	return persistedToken != ""
 }

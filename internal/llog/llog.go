@@ -28,3 +28,19 @@ func BgPrimaryColorFullWidth(strs ...string) {
 func HelpStyle() lipgloss.Style {
 	return lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
 }
+
+func StyleCommand() lipgloss.Style {
+	return lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#AD58B4")).
+		Bold(true).
+		PaddingLeft(2)
+}
+
+func StyleTitle() lipgloss.Style {
+	return lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("#FAFAFA")).
+		Background(lipgloss.Color("#7D56F4")).
+		Padding(0, 1).
+		MarginBottom(1)
+}
