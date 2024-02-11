@@ -24,3 +24,7 @@ func BgPrimaryColorFullWidth(strs ...string) {
 			Width(w).
 			Render(strs...))
 }
+
+func HelpStyle() lipgloss.Style {
+	return lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
+}

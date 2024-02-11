@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"envi/internal/llog"
 	"os"
 	"time"
 
@@ -52,13 +53,12 @@ func (m model) View() string {
 	if m.didFinish {
 		return "" // Clear the screen
 	}
-	var helpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
-	var boldStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#626262")).Bold(true)
+	var boldStyle = llog.HelpStyle().Bold(true)
 	return lipgloss.JoinVertical(
 		lipgloss.Top,
-		helpStyle.Render(m.title),
+		llog.HelpStyle().Render(m.title),
 		m.progress.View(),
-		helpStyle.Render("Current provider: "+boldStyle.Render("Zipper")),
+		llog.HelpStyle().Render("Current provider: "+boldStyle.Render("Zipper")),
 	)
 }
 

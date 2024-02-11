@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"envi/internal/llog"
 	"log"
 
 	A "github.com/IBM/fp-go/array"
@@ -63,9 +64,9 @@ func (model *TextInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (p *TextInput) View() string {
-	return lipgloss.JoinHorizontal(
-		lipgloss.Center,
-		p.questions[p.currentQuestion].Question,
+	return lipgloss.JoinVertical(
+		lipgloss.Left,
+		llog.HelpStyle().Render(p.questions[p.currentQuestion].Question),
 		p.answerField.View(),
 	)
 }

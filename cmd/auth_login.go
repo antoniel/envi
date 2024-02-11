@@ -9,6 +9,7 @@ import (
 	E "github.com/IBM/fp-go/either"
 	F "github.com/IBM/fp-go/function"
 	"github.com/charmbracelet/bubbles/textinput"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 )
 
@@ -18,38 +19,65 @@ var AuthLoginCmd = &cobra.Command{
 	RunE:  AuthCmdRunE,
 }
 
+func init() {
+	AuthLoginCmd.Flags().StringP("token", "t", "", "Token")
+}
+
 func AuthCmdRunE(cmd *cobra.Command, args []string) error {
 	applicationPath := storage.GetApplicationDataPath()
-	c2PersistToken := F.Curry2(persistToken)
-
 	maybeTokenFromFlag := cmd.Flag("token").Value.String()
 
 	accessTokenE := F.Pipe1(
 		GetAccessToken(maybeTokenFromFlag, applicationPath),
-		E.Chain(c2PersistToken(applicationPath)),
+		E.Chain(F.Bind1st(persistToken, applicationPath)),
 	)
 
 	_, err := E.Unwrap(accessTokenE)
 	if err != nil {
 		return err
 	}
-
+	showSuccessMessage()
 	return nil
 }
 
-func requestTokenToUser(tokenFromFlag string) string {
-	var token string
-	token = tokenFromFlag
+func showSuccessMessage() {
+	var styleTitle = lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("#FAFAFA")).
+		Background(lipgloss.Color("#7D56F4")).
+		Padding(0, 1).
+		MarginBottom(1)
 
-	if token == "" {
-		response := form.NewPrompt([]form.Question{
-			form.NewQuestion("Enter your token: ").
-				WithEchoMode(textinput.EchoPassword),
-		})
-		token = response[0]
-	}
+	var styleCommand = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#AD58B4")).
+		Bold(true).
+		PaddingLeft(2)
 
-	return token
+	var styleText = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#FAFAFA")).
+		PaddingLeft(2).
+		MarginBottom(1)
+
+	title := styleTitle.Render("Authenticated! Quick Commands:")
+	cmdPull := styleCommand.Render("`envi pull`:")
+	cmdAuth := styleCommand.Render("`envi auth`:")
+	helpText := styleText.Render("For more, `envi --help`.")
+
+	message := lipgloss.JoinVertical(lipgloss.Left, title,
+		lipgloss.JoinHorizontal(lipgloss.Left, cmdPull, styleText.Render("Sync .env files.")),
+		lipgloss.JoinHorizontal(lipgloss.Left, cmdAuth, styleText.Render("Manage account.")),
+		helpText,
+	)
+
+	println(message)
+}
+
+func requestTokenToUser() string {
+	response := form.NewPrompt([]form.Question{
+		form.NewQuestion("Enter your token: ").
+			WithEchoMode(textinput.EchoPassword),
+	})
+	return response[0]
 }
 
 var ErrUnableToPersistToken = fmt.Errorf("unable to persist token")
@@ -67,7 +95,7 @@ func GetAccessToken(maybeTokenFromFlag, applicationDataPath string) E.Either[err
 		return E.Right[error](persistedToken)
 	}
 
-	tokenFromUserInput := requestTokenToUser(maybeTokenFromFlag)
+	tokenFromUserInput := requestTokenToUser()
 	if tokenFromUserInput != "" {
 		return E.Right[error](tokenFromUserInput)
 	}
@@ -90,7 +118,6 @@ func persistToken(path string, token string) E.Either[error, string] {
 func getPersistedToken(path string) (string, error) {
 	token, err := os.ReadFile(path + "/" + TOKEN_FILE_NAME)
 	if err != nil {
-		fmt.Println(err)
 		return "", err
 	}
 	return string(token), nil

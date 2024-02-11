@@ -11,7 +11,6 @@ var AuthCmd = &cobra.Command{
 }
 
 func init() {
-	AuthCmd.Flags().StringP("token", "t", "", "Token")
 	AuthCmd.AddCommand(AuthLoginCmd)
 }
 
