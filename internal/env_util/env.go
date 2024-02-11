@@ -11,13 +11,15 @@ import (
 
 type EnvString string
 
-func GetValidKeys(env EnvString) []string {
-	return F.Pipe4(
+func GetValidRows(env EnvString) []string {
+	return F.Pipe2(
 		string(env),
 		split("\n"),
-		A.Filter(func(s string) bool { return !emptyLine(s) && !commentLine(s) && !malformedLine(s) }),
-		A.Map(split("=")),
-		A.Map(func(a []string) string { return a[0] }),
+		A.Filter(func(s string) bool {
+			return !emptyLine(s) &&
+				!commentLine(s) &&
+				!malformedLine(s)
+		}),
 	)
 }
 
@@ -37,8 +39,8 @@ func malformedLine(s string) bool {
 var split = F.Curry2(F.Swap(strings.Split))
 
 type Diff struct {
-	additions []string
-	deletions []string
+	Additions []string
+	Deletions []string
 }
 
 func (d Diff) PrettyPrint() string {
@@ -49,13 +51,13 @@ func (d Diff) PrettyPrint() string {
 	BgGreen := lipgloss.NewStyle().Foreground(lipgloss.Color("#C1F3AB"))
 
 	additions := F.Pipe3(
-		d.additions,
+		d.Additions,
 		A.Map(withAdditionSigh),
 		S.Join("\n"),
 		func(s string) string { return BgGreen.Render(s) },
 	)
 	deletions := F.Pipe3(
-		d.deletions,
+		d.Deletions,
 		A.Map(withDeletionSigh),
 		S.Join("\n"),
 		func(s string) string { return BgRed.Render(s) },
@@ -91,24 +93,49 @@ func Includes(s string, arr []string) bool {
 }
 
 func DiffEnvs(local, remote EnvString) Diff {
-	localKeys := GetValidKeys(local)
-	remoteKeys := GetValidKeys(remote)
+	localRows := GetValidRows(local)
+	remoteRows := GetValidRows(remote)
+
+	localSet := make(map[string]string)
+	for _, k := range localRows {
+		key := getKeysFromEnvRow(k)
+		val := getValueFromEnvRow(k)
+		localSet[key] = val
+	}
+	remoteSet := make(map[string]string)
+	for _, k := range remoteRows {
+		key := getKeysFromEnvRow(k)
+		val := getValueFromEnvRow(k)
+		remoteSet[key] = val
+	}
 
 	var localMinusRemote = []string{}
-	for _, k := range localKeys {
-		if !Includes(k, remoteKeys) {
+	var remoteMinusLocal = []string{}
+
+	for k := range localSet {
+		if _, found := remoteSet[k]; !found {
 			localMinusRemote = append(localMinusRemote, k)
 		}
 	}
-	var remoteMinusLocal = []string{}
-	for _, k := range remoteKeys {
-		if !Includes(k, localKeys) {
+
+	for k, v := range remoteSet {
+		if lv, found := localSet[k]; !found {
+			remoteMinusLocal = append(remoteMinusLocal, k)
+		} else if v != lv {
 			remoteMinusLocal = append(remoteMinusLocal, k)
 		}
 	}
 
 	return Diff{
-		additions: remoteMinusLocal,
-		deletions: localMinusRemote,
+		Additions: remoteMinusLocal,
+		Deletions: localMinusRemote,
 	}
+}
+
+func getValueFromEnvRow(row string) string {
+	return strings.Split(row, "=")[1]
+}
+
+func getKeysFromEnvRow(row string) string {
+	return strings.Split(row, "=")[0]
 }
