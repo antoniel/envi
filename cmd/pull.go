@@ -1,7 +1,8 @@
 package cmd
 
 import (
-	"envi/internal/env_util"
+	"envi/internal/domain"
+	"envi/internal/storage"
 	"envi/internal/ui"
 	"errors"
 	"fmt"
@@ -21,7 +22,7 @@ var PullCmd = &cobra.Command{
 
 func PullCmdFunc(cmd *cobra.Command, args []string) error {
 
-	accessToken, err := E.Unwrap(GetAccessToken("", getApplicationDataPath()))
+	accessToken, err := E.Unwrap(GetAccessToken("", storage.GetApplicationDataPath()))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -89,7 +90,7 @@ func fetchRemoteEnvValues(callbackUrl, accessToken string) (string, error) {
 }
 
 func diffEnvValues(local string, remote string) {
-	str := env_util.DiffEnvs(env_util.EnvString(local), env_util.EnvString(remote))
+	str := domain.DiffEnvs(domain.EnvString(local), domain.EnvString(remote))
 	some := str.PrettyPrint()
 	println(some)
 }

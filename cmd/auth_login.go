@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"envi/internal/storage"
 	form "envi/internal/ui"
 	"fmt"
 	"os"
@@ -18,7 +19,7 @@ var AuthLoginCmd = &cobra.Command{
 }
 
 func AuthCmdRunE(cmd *cobra.Command, args []string) error {
-	applicationPath := getApplicationDataPath()
+	applicationPath := storage.GetApplicationDataPath()
 	c2PersistToken := F.Curry2(persistToken)
 
 	maybeTokenFromFlag := cmd.Flag("token").Value.String()
