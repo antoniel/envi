@@ -52,13 +52,13 @@ func (d Diff) PrettyPrint() string {
 		d.additions,
 		A.Map(withAdditionSigh),
 		S.Join("\n"),
-		func(s string) string { return BgRed.Render(s) },
+		func(s string) string { return BgGreen.Render(s) },
 	)
 	deletions := F.Pipe3(
 		d.deletions,
 		A.Map(withDeletionSigh),
 		S.Join("\n"),
-		func(s string) string { return BgGreen.Render(s) },
+		func(s string) string { return BgRed.Render(s) },
 	)
 
 	emptyAdditions := len(additions) == 0
