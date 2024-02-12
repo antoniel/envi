@@ -58,7 +58,6 @@ func showEnvUpdateSuccessMessage(diffPrintStr string) {
 	var styleSuccess = l.NewStyle().
 		Bold(true).
 		Foreground(l.Color("#4CAF50")).
-		Padding(0, 1).
 		Margin(0, 0, 1, 0)
 
 	var styleHint = l.NewStyle().
