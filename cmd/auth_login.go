@@ -5,7 +5,6 @@ import (
 	"envi/internal/storage"
 	form "envi/internal/ui"
 	"fmt"
-	"os"
 
 	E "github.com/IBM/fp-go/either"
 	F "github.com/IBM/fp-go/function"
@@ -72,17 +71,14 @@ func requestTokenToUser() string {
 	return response[0]
 }
 
-var ErrUnableToPersistToken = fmt.Errorf("unable to persist token")
-var ErrInvalidToken = fmt.Errorf("invalid token")
-
-const TOKEN_FILE_NAME = "token"
+var ErrTokenNotProvided = fmt.Errorf("token not provided")
 
 func GetAccessToken(maybeTokenFromFlag, applicationDataPath string) E.Either[error, string] {
 	if maybeTokenFromFlag != "" {
 		return E.Right[error](maybeTokenFromFlag)
 	}
 
-	persistedToken, err := getPersistedToken(applicationDataPath)
+	persistedToken, err := storage.AccessToken.Get()
 	if err == nil {
 		return E.Right[error](persistedToken)
 	}
@@ -92,31 +88,15 @@ func GetAccessToken(maybeTokenFromFlag, applicationDataPath string) E.Either[err
 		return E.Right[error](tokenFromUserInput)
 	}
 
-	return E.Left[string](ErrInvalidToken)
+	return E.Left[string](ErrTokenNotProvided)
 }
 
 func persistToken(path string, token string) E.Either[error, string] {
-	if token == "" {
-		// return ErrInvalidToken,
-		return E.Left[string](ErrInvalidToken)
-	}
-	some := os.WriteFile(path+"/"+TOKEN_FILE_NAME, []byte(token), 0644)
-	if some != nil {
-		return E.Left[string](ErrUnableToPersistToken)
-	}
-	return E.Right[error](token)
-}
-
-func getPersistedToken(path string) (string, error) {
-	token, err := os.ReadFile(path + "/" + TOKEN_FILE_NAME)
-	if err != nil {
-		return "", err
-	}
-	return string(token), nil
+	return E.FromError(storage.AccessToken.Set)(token)
 }
 
 func AuthIsLogged() bool {
-	persistedToken, err := getPersistedToken(storage.GetApplicationDataPath())
+	persistedToken, err := storage.AccessToken.Get()
 	if err != nil {
 		return false
 	}
