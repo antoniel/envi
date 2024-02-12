@@ -24,7 +24,6 @@ var PullCmd = &cobra.Command{
 }
 
 func PullCmdFunc(cmd *cobra.Command, args []string) error {
-
 	accessToken, err := E.Unwrap(GetAccessToken("", storage.GetApplicationDataPath()))
 	if err != nil {
 		log.Fatal(err)
@@ -61,14 +60,16 @@ func showEnvUpdateSuccessMessage(diffPrintStr string) {
 		Margin(0, 0, 1, 0)
 
 	var styleHint = l.NewStyle().
-		Foreground(l.Color("#6272A4")). // Cor mais escura para a dica
+		Foreground(l.Color("#6272A4")).
 		Padding(0, 1).
 		Margin(1, 0, 1, 0)
 
 	successMessage := styleSuccess.Render(".env file updated successfully.")
-	undoHint := styleHint.Render("To undo this operation, use", llog.StyleCommand().Render("`envi undo`."))
+	undoHintMessage := styleHint.Render(
+		"To undo this operation, use",
+		llog.StyleCommand().Render("`envi undo`"))
 
-	message := l.JoinVertical(l.Left, successMessage, diffPrintStr, undoHint)
+	message := l.JoinVertical(l.Left, successMessage, diffPrintStr, undoHintMessage)
 
 	fmt.Println(message)
 }
