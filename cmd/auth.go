@@ -38,17 +38,17 @@ func showLoginMessage() {
 	// Estilos
 	var styleTitle = llog.StyleTitle()
 
-	var styleText = func() l.Style {
+	var hint = func() l.Style {
 		return l.NewStyle().
-			Foreground(l.Color("#FAFAFA")).
+			Foreground(l.Color(llog.Tokens.HintColor)).
 			PaddingLeft(2).
 			MarginBottom(1)
 	}
-	cmd := l.NewStyle().Foreground(l.Color("#AD58B4"))
+	cmd := l.NewStyle().Foreground(l.Color(llog.Tokens.CommandForegroundColor))
 
 	title := styleTitle.Render("Authenticated with Zipper:")
-	loginStatus := styleText().Render("You are currently logged using the Zipper provider.")
-	logoutMessage := styleText().Italic(true).Render("To log out, use", cmd.Render("`envi auth logout`."))
+	loginStatus := hint().Render("You are currently logged using the Zipper provider.")
+	logoutMessage := hint().Italic(true).Render("To log out, use", cmd.Render("`envi auth logout`."))
 
 	message := l.JoinVertical(
 		l.Left,

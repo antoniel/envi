@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"envi/internal/llog"
 	"envi/internal/storage"
 	"fmt"
 
@@ -29,7 +30,7 @@ func showLogoutSuccessMessage() {
 
 	var styleSuccess = l.NewStyle().
 		Bold(true).
-		Foreground(l.Color("#4CAF50"))
+		Foreground(l.Color(llog.Tokens.SuccessColor))
 
 	message := styleSuccess.Render("Logout successful. You have been disconnected from the Zipper provider.")
 

@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"envi/internal/llog"
 	"strings"
 
 	A "github.com/IBM/fp-go/array"
@@ -15,7 +16,7 @@ type Diff struct {
 	Deletions []string
 }
 
-func setEquals[T comparable](x, y []T) bool {
+func uniqueElementsSliceEquals[T comparable](x, y []T) bool {
 	if len(x) != len(y) {
 		return false
 	}
@@ -35,7 +36,7 @@ func setEquals[T comparable](x, y []T) bool {
 	return true
 }
 func (Diff) Equals(x, y Diff) bool {
-	stringSetEq := EQ.FromEquals(setEquals[string])
+	stringSetEq := EQ.FromEquals(uniqueElementsSliceEquals[string])
 
 	return stringSetEq.Equals(x.Additions, y.Additions) &&
 		stringSetEq.Equals(x.Deletions, y.Deletions)
@@ -47,20 +48,30 @@ func (d Diff) PrettyPrint() string {
 	withAdditionSigh := func(s string) string { return "+ " + s }
 
 	withDeletionSigh := func(s string) string { return "- " + s }
-	BgRed := lipgloss.NewStyle().Foreground(lipgloss.Color("#F15C93"))
-	BgGreen := lipgloss.NewStyle().Foreground(lipgloss.Color("#C1F3AB"))
+	redForeground := lipgloss.NewStyle().Foreground(lipgloss.Color(llog.Tokens.ErrorColor))
+	greenForeground := lipgloss.NewStyle().Foreground(lipgloss.Color(llog.Tokens.SuccessColor))
 
 	additions := F.Pipe3(
 		d.Additions,
 		A.Map(withAdditionSigh),
 		S.Join("\n"),
-		func(s string) string { return BgGreen.Render(s) },
+		func(s string) string {
+			if s == "" {
+				return ""
+			}
+			return greenForeground.Render(s)
+		},
 	)
 	deletions := F.Pipe3(
 		d.Deletions,
 		A.Map(withDeletionSigh),
 		S.Join("\n"),
-		func(s string) string { return BgRed.Render(s) },
+		func(s string) string {
+			if s == "" {
+				return ""
+			}
+			return redForeground.Render(s)
+		},
 	)
 
 	emptyAdditions := len(additions) == 0

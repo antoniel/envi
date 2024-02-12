@@ -45,7 +45,7 @@ func showSuccessMessage() {
 	var styleCommand = llog.StyleCommand()
 
 	var styleText = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#FAFAFA")).
+		Foreground(lipgloss.Color(llog.Tokens.ForegroundColor)).
 		PaddingLeft(2).
 		MarginBottom(1)
 

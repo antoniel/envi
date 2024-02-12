@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"time"
 
 	E "github.com/IBM/fp-go/either"
 	F "github.com/IBM/fp-go/function"
@@ -69,16 +70,40 @@ func PullCmdFunc(cmd *cobra.Command, args []string) error {
 	callbackURLSetter := setter[string, EnvResultState]("CallbackURL")
 	remoteEnvValuesSetter := setter[string, EnvResultState]("RemoteEnvValues")
 	localEnvValuesSetter := setter[string, EnvResultState]("LocalEnvValues")
-	return F.Pipe5(
+
+	errorOrNil := F.Pipe7(
 		E.Do[error](EnvResultState{}),
 		E.Bind(accessTokenSetter, getAccessTokenComputation),
 		E.Bind(callbackURLSetter, getCallBackUrlComputation),
 		E.Bind(remoteEnvValuesSetter, fetchRemoteEnvValuesComputation),
 		E.Bind(localEnvValuesSetter, getCurrentEnvValuesComputation),
-		E.Fold(handleLeft, handleRight),
+		E.Chain(backupEnvFileIOEither),
+		E.Chain(saveEnvFileIOEither),
+		E.Fold(F.Identity, handleRight),
 	)
+
+	return errorOrNil
 }
 
+func backupEnvFileIOEither(s EnvResultState) E.Either[error, EnvResultState] {
+	fileName := fmt.Sprintf(".env.local.backup.%d", time.Now().UnixNano())
+	err := os.Rename(".env", fileName)
+	if errors.Is(err, os.ErrNotExist) {
+		fmt.Println("No .env file found. Skipping backup.")
+		return E.Either[error, EnvResultState](E.Right[error](s))
+	}
+	if err != nil {
+		return E.Left[EnvResultState](fmt.Errorf("❌ error while backing up .env file:\n%s", err))
+	}
+	return E.Right[error](s)
+}
+func saveEnvFileIOEither(s EnvResultState) E.Either[error, EnvResultState] {
+	err := os.WriteFile(".env", []byte(s.RemoteEnvValues), 0666)
+	if err != nil {
+		return E.Left[EnvResultState](fmt.Errorf("❌ error while saving .env file:\n%s", err))
+	}
+	return E.Right[error](s)
+}
 func getAccessTokenComputation(s EnvResultState) E.Either[error, string] {
 	return GetAccessToken("", storage.GetApplicationDataPath())
 }
@@ -101,9 +126,6 @@ func getCurrentEnvValuesComputation(s EnvResultState) E.Either[error, string] {
 	}
 	return E.Right[error](localEnvFile)
 }
-func handleLeft(err error) error {
-	return err
-}
 func handleRight(s EnvResultState) error {
 	diff := diffEnvValues(s.LocalEnvValues, s.RemoteEnvValues)
 	diffPrintStr := diff.PrettyPrint()
@@ -113,16 +135,22 @@ func handleRight(s EnvResultState) error {
 
 func showEnvUpdateSuccessMessage(diffPrintStr string) {
 	var styleSuccess = l.NewStyle().
-		Bold(true).
-		Foreground(l.Color("#4CAF50")).
-		Margin(0, 0, 1, 0)
+		Foreground(l.Color(llog.Tokens.SuccessColor))
 
 	var styleHint = l.NewStyle().
-		Foreground(l.Color("#6272A4")).
+		Foreground(l.Color(llog.Tokens.HintColor)).
 		Padding(0, 1).
-		Margin(1, 0, 1, 0)
+		Margin(0, 0, 1, 0)
 
-	successMessage := styleSuccess.Render(".env file updated successfully.")
+	if diffPrintStr == "" {
+		successMessage := styleSuccess.Render(".env file is already up to date.")
+		fmt.Println(successMessage)
+		return
+	}
+	successMessage := styleSuccess.
+		Bold(true).
+		Margin(0, 0, 1, 0).
+		Render(".env file updated successfully.")
 	undoHintMessage := styleHint.Render(
 		"To undo this operation, use",
 		llog.StyleCommand().Render("`envi undo`"))
@@ -133,6 +161,7 @@ func showEnvUpdateSuccessMessage(diffPrintStr string) {
 }
 
 var ErrEnvFileNotFound = errors.New("ErrEnvFileNotFound - env file not found")
+var ErrUnableToCreateEnvFile = errors.New("ErrUnableToCreateEnvFile - unable to create env file")
 
 func getCurrentEnvValues() (string, error) {
 	currentDir, err := os.Getwd()
@@ -143,7 +172,7 @@ func getCurrentEnvValues() (string, error) {
 	envFile, err := os.ReadFile(currentDir + "/.env")
 
 	if errors.Is(err, os.ErrNotExist) {
-		return "", ErrEnvFileNotFound
+		return string(""), nil
 	}
 
 	if err != nil {
