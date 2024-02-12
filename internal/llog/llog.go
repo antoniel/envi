@@ -32,8 +32,7 @@ func HelpStyle() lipgloss.Style {
 func StyleCommand() lipgloss.Style {
 	return lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#AD58B4")).
-		Bold(true).
-		PaddingLeft(2)
+		Bold(true)
 }
 
 func StyleTitle() lipgloss.Style {

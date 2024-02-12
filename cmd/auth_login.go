@@ -50,8 +50,8 @@ func showSuccessMessage() {
 		MarginBottom(1)
 
 	title := styleTitle.Render("Authenticated! Quick Commands:")
-	cmdPull := styleCommand.Render("`envi pull`:")
-	cmdAuth := styleCommand.Render("`envi auth`:")
+	cmdPull := styleCommand.PaddingLeft(2).Render("`envi pull`:")
+	cmdAuth := styleCommand.PaddingLeft(2).Render("`envi auth`:")
 	helpText := styleText.Render("For more, `envi --help`.")
 
 	message := lipgloss.JoinVertical(lipgloss.Left, title,
