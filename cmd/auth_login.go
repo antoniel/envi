@@ -29,7 +29,7 @@ func AuthCmdRunE(cmd *cobra.Command, args []string) error {
 
 	accessTokenE := F.Pipe1(
 		GetAccessToken(maybeTokenFromFlag, applicationPath),
-		E.Chain(F.Bind1st(persistToken, applicationPath)),
+		E.Chain(F.Bind1st(PersistToken, applicationPath)),
 	)
 
 	_, err := E.Unwrap(accessTokenE)
@@ -91,7 +91,7 @@ func GetAccessToken(maybeTokenFromFlag, applicationDataPath string) E.Either[err
 	return E.Left[string](ErrTokenNotProvided)
 }
 
-func persistToken(path string, token string) E.Either[error, string] {
+func PersistToken(path string, token string) E.Either[error, string] {
 	return E.FromError(storage.AccessToken.Set)(token)
 }
 

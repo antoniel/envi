@@ -73,7 +73,7 @@ func PullCmdFunc(cmd *cobra.Command, args []string) error {
 	localEnvValuesSetter := setter[string, EnvResultState]("LocalEnvValues")
 	diffRemoteLocalSetter := setter[domain.Diff, EnvResultState]("DiffRemoteLocal")
 
-	errorOrNil := F.Pipe8(
+	err := F.Pipe8(
 		E.Do[error](EnvResultState{}),
 		E.Bind(accessTokenSetter, getAccessTokenComputation),
 		E.Bind(callbackURLSetter, getCallBackUrlComputation),
@@ -84,8 +84,12 @@ func PullCmdFunc(cmd *cobra.Command, args []string) error {
 		E.Chain(saveEnvFileIOEither),
 		E.Fold(F.Identity, handleRight),
 	)
+	if err != nil {
+		fmt.Print(err)
+		return nil
+	}
 
-	return errorOrNil
+	return nil
 }
 
 func backupEnvFileIOEither(s EnvResultState) E.Either[error, EnvResultState] {
@@ -112,15 +116,20 @@ func saveEnvFileIOEither(s EnvResultState) E.Either[error, EnvResultState] {
 	return E.Right[error](s)
 }
 func getAccessTokenComputation(s EnvResultState) E.Either[error, string] {
-	return GetAccessToken("", storage.GetApplicationDataPath())
+	path := storage.GetApplicationDataPath()
+	persistTokenFn := F.Bind1st(PersistToken, path)
+	return F.Pipe1(
+		GetAccessToken("", storage.GetApplicationDataPath()),
+		E.Chain(persistTokenFn),
+	)
 }
 func getCallBackUrlComputation(s EnvResultState) E.Either[error, string] {
 	return E.Right[error](provider.GetZipperProviderDefaultUrl())
 }
 func fetchRemoteEnvValuesComputation(s EnvResultState) E.Either[error, string] {
 	doneFn := ui.ProgressBar("Fetching remote .env file...")
+	defer doneFn()
 	remoteEnvValues, err := fetchRemoteEnvValues(s.CallbackURL, s.AccessToken)
-	doneFn()
 	if err != nil {
 		return E.Left[string](err)
 	}
