@@ -41,6 +41,9 @@ func (Diff) Equals(x, y Diff) bool {
 	return stringSetEq.Equals(x.Additions, y.Additions) &&
 		stringSetEq.Equals(x.Deletions, y.Deletions)
 }
+func (d Diff) HasNoDiff() bool {
+	return len(d.Additions) == 0 && len(d.Deletions) == 0
+}
 
 var EqDiff = EQ.FromEquals(Diff{}.Equals)
 

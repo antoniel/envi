@@ -63,6 +63,7 @@ type EnvResultState struct {
 	CallbackURL     string
 	RemoteEnvValues string
 	LocalEnvValues  string
+	DiffRemoteLocal domain.Diff
 }
 
 func PullCmdFunc(cmd *cobra.Command, args []string) error {
@@ -70,13 +71,15 @@ func PullCmdFunc(cmd *cobra.Command, args []string) error {
 	callbackURLSetter := setter[string, EnvResultState]("CallbackURL")
 	remoteEnvValuesSetter := setter[string, EnvResultState]("RemoteEnvValues")
 	localEnvValuesSetter := setter[string, EnvResultState]("LocalEnvValues")
+	diffRemoteLocalSetter := setter[domain.Diff, EnvResultState]("DiffRemoteLocal")
 
-	errorOrNil := F.Pipe7(
+	errorOrNil := F.Pipe8(
 		E.Do[error](EnvResultState{}),
 		E.Bind(accessTokenSetter, getAccessTokenComputation),
 		E.Bind(callbackURLSetter, getCallBackUrlComputation),
 		E.Bind(remoteEnvValuesSetter, fetchRemoteEnvValuesComputation),
 		E.Bind(localEnvValuesSetter, getCurrentEnvValuesComputation),
+		E.Bind(diffRemoteLocalSetter, diffEnvValuesComputation),
 		E.Chain(backupEnvFileIOEither),
 		E.Chain(saveEnvFileIOEither),
 		E.Fold(F.Identity, handleRight),
@@ -86,6 +89,10 @@ func PullCmdFunc(cmd *cobra.Command, args []string) error {
 }
 
 func backupEnvFileIOEither(s EnvResultState) E.Either[error, EnvResultState] {
+	if s.DiffRemoteLocal.HasNoDiff() {
+		// No need to backup
+		return E.Right[error](s)
+	}
 	fileName := fmt.Sprintf(".env.local.backup.%d", time.Now().UnixNano())
 	err := os.Rename(".env", fileName)
 	if errors.Is(err, os.ErrNotExist) {
@@ -126,10 +133,11 @@ func getCurrentEnvValuesComputation(s EnvResultState) E.Either[error, string] {
 	}
 	return E.Right[error](localEnvFile)
 }
+func diffEnvValuesComputation(s EnvResultState) E.Either[error, domain.Diff] {
+	return E.Right[error](diffEnvValues(s.LocalEnvValues, s.RemoteEnvValues))
+}
 func handleRight(s EnvResultState) error {
-	diff := diffEnvValues(s.LocalEnvValues, s.RemoteEnvValues)
-	diffPrintStr := diff.PrettyPrint()
-	showEnvUpdateSuccessMessage(diffPrintStr)
+	showEnvUpdateSuccessMessage(s.DiffRemoteLocal.PrettyPrint())
 	return nil
 }
 
