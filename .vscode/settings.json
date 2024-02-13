@@ -1,0 +1,7 @@
+{
+  "workbench.colorTheme": "Monokai Dimmed",
+  "files.exclude": {
+    "tmp": false
+  },
+  "cSpell.words": ["envii", "llog"]
+}
