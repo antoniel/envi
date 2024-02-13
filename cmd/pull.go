@@ -85,7 +85,7 @@ func PullCmdFunc(cmd *cobra.Command, args []string) error {
 		E.Fold(F.Identity, handleRight),
 	)
 	if err != nil {
-		fmt.Print(err)
+		llog.L.Error(err)
 		return nil
 	}
 
@@ -177,8 +177,8 @@ func showEnvUpdateSuccessMessage(diffPrintStr string) {
 	fmt.Println(message)
 }
 
-var ErrEnvFileNotFound = errors.New("ErrEnvFileNotFound - env file not found")
-var ErrUnableToCreateEnvFile = errors.New("ErrUnableToCreateEnvFile - unable to create env file")
+var ErrEnvFileNotFound = errors.New("- env file not found")
+var ErrUnableToCreateEnvFile = errors.New("- unable to create env file")
 
 func getCurrentEnvValues() (string, error) {
 	currentDir, err := os.Getwd()
@@ -199,6 +199,8 @@ func getCurrentEnvValues() (string, error) {
 	return string(envFile), nil
 }
 
+var ErrUnableToFetchRemoteEnvValues = errors.New("- Unable to fetch remote env values, check your connection and credentials, then try again")
+
 func fetchRemoteEnvValues(callbackUrl, accessToken string) (string, error) {
 	response, err := resty.New().
 		R().
@@ -211,7 +213,8 @@ func fetchRemoteEnvValues(callbackUrl, accessToken string) (string, error) {
 		return "", err
 	}
 	if response.IsError() {
-		return "", fmt.Errorf("fetch not ok: %s", response.String())
+
+		return "", ErrUnableToFetchRemoteEnvValues
 	}
 	responseAsObject := *response.Result().(*map[string]interface{})
 	return responseAsObject["data"].(string), nil

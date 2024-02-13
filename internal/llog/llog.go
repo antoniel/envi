@@ -2,8 +2,10 @@ package llog
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/log"
 	"golang.org/x/term"
 )
 
@@ -62,4 +64,10 @@ func StyleTitle() lipgloss.Style {
 		Background(lipgloss.Color(Tokens.BackgroundColor)).
 		Padding(0, 1).
 		MarginBottom(1)
+}
+
+var L = log.New(os.Stderr)
+
+func init() {
+	L.SetLevel(log.DebugLevel)
 }
