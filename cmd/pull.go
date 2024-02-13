@@ -58,7 +58,7 @@ func setter[T, S any](fieldName string) func(T) func(S) S {
 	return F.Curry2[TypeOfGeneralSetterBound](generalSetterBound)
 }
 
-type EnvResultState struct {
+type EnvSyncState struct {
 	AccessToken     string
 	CallbackURL     string
 	RemoteEnvValues string
@@ -67,21 +67,10 @@ type EnvResultState struct {
 }
 
 func PullCmdFunc(cmd *cobra.Command, args []string) error {
-	accessTokenSetter := setter[string, EnvResultState]("AccessToken")
-	callbackURLSetter := setter[string, EnvResultState]("CallbackURL")
-	remoteEnvValuesSetter := setter[string, EnvResultState]("RemoteEnvValues")
-	localEnvValuesSetter := setter[string, EnvResultState]("LocalEnvValues")
-	diffRemoteLocalSetter := setter[domain.Diff, EnvResultState]("DiffRemoteLocal")
-
-	err := F.Pipe8(
-		E.Do[error](EnvResultState{}),
-		E.Bind(accessTokenSetter, getAccessTokenComputation),
-		E.Bind(callbackURLSetter, getCallBackUrlComputation),
-		E.Bind(remoteEnvValuesSetter, fetchRemoteEnvValuesComputation),
-		E.Bind(localEnvValuesSetter, getCurrentEnvValuesComputation),
-		E.Bind(diffRemoteLocalSetter, diffEnvValuesComputation),
+	err := F.Pipe3(
+		SyncEnvState(),
 		E.Chain(backupEnvFileIOEither),
-		E.Chain(saveEnvFileIOEither),
+		E.Chain(SaveEnvFileIOEither),
 		E.Fold(F.Identity, handleRight),
 	)
 	if err != nil {
@@ -92,7 +81,26 @@ func PullCmdFunc(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func backupEnvFileIOEither(s EnvResultState) E.Either[error, EnvResultState] {
+func SyncEnvState() E.Either[error, EnvSyncState] {
+	accessTokenSetter := setter[string, EnvSyncState]("AccessToken")
+	callbackURLSetter := setter[string, EnvSyncState]("CallbackURL")
+	remoteEnvValuesSetter := setter[string, EnvSyncState]("RemoteEnvValues")
+	localEnvValuesSetter := setter[string, EnvSyncState]("LocalEnvValues")
+	diffRemoteLocalSetter := setter[domain.Diff, EnvSyncState]("DiffRemoteLocal")
+
+	eitherEnvSyncState := F.Pipe5(
+		E.Do[error](EnvSyncState{}),
+		E.Bind(accessTokenSetter, getAccessTokenComputation),
+		E.Bind(callbackURLSetter, getCallBackUrlComputation),
+		E.Bind(remoteEnvValuesSetter, fetchRemoteEnvValuesComputation),
+		E.Bind(localEnvValuesSetter, getCurrentEnvValuesComputation),
+		E.Bind(diffRemoteLocalSetter, diffEnvValuesComputation),
+	)
+
+	return eitherEnvSyncState
+}
+
+func backupEnvFileIOEither(s EnvSyncState) E.Either[error, EnvSyncState] {
 	if s.DiffRemoteLocal.HasNoDiff() {
 		// No need to backup
 		return E.Right[error](s)
@@ -101,21 +109,30 @@ func backupEnvFileIOEither(s EnvResultState) E.Either[error, EnvResultState] {
 	err := os.Rename(".env", fileName)
 	if errors.Is(err, os.ErrNotExist) {
 		fmt.Println("No .env file found. Skipping backup.")
-		return E.Either[error, EnvResultState](E.Right[error](s))
+		return E.Either[error, EnvSyncState](E.Right[error](s))
 	}
 	if err != nil {
-		return E.Left[EnvResultState](fmt.Errorf("❌ error while backing up .env file:\n%s", err))
+		return E.Left[EnvSyncState](fmt.Errorf("❌ error while backing up .env file:\n%s", err))
 	}
 	return E.Right[error](s)
 }
-func saveEnvFileIOEither(s EnvResultState) E.Either[error, EnvResultState] {
+
+func SaveEnvFileIOEither(s EnvSyncState) E.Either[error, EnvSyncState] {
+	// Should keep the current .env file in storage.history before saving the new one
+	// This is to allow the user to undo the operation
+	storageError := storage.LocalHistory.Save(s.LocalEnvValues)
+	if errors.Is(storageError, storage.ErrUnableToPersistLocalHistory) {
+		return E.Left[EnvSyncState](storageError)
+	}
+
 	err := os.WriteFile(".env", []byte(s.RemoteEnvValues), 0666)
 	if err != nil {
-		return E.Left[EnvResultState](fmt.Errorf("❌ error while saving .env file:\n%s", err))
+		return E.Left[EnvSyncState](fmt.Errorf("❌ error while saving .env file:\n%s", err))
 	}
 	return E.Right[error](s)
 }
-func getAccessTokenComputation(s EnvResultState) E.Either[error, string] {
+
+func getAccessTokenComputation(s EnvSyncState) E.Either[error, string] {
 	path := storage.GetApplicationDataPath()
 	persistTokenFn := F.Bind1st(PersistToken, path)
 	return F.Pipe1(
@@ -123,10 +140,10 @@ func getAccessTokenComputation(s EnvResultState) E.Either[error, string] {
 		E.Chain(persistTokenFn),
 	)
 }
-func getCallBackUrlComputation(s EnvResultState) E.Either[error, string] {
+func getCallBackUrlComputation(s EnvSyncState) E.Either[error, string] {
 	return E.Right[error](provider.GetZipperProviderDefaultUrl())
 }
-func fetchRemoteEnvValuesComputation(s EnvResultState) E.Either[error, string] {
+func fetchRemoteEnvValuesComputation(s EnvSyncState) E.Either[error, string] {
 	doneFn := ui.ProgressBar("Fetching remote .env file...")
 	defer doneFn()
 	remoteEnvValues, err := fetchRemoteEnvValues(s.CallbackURL, s.AccessToken)
@@ -135,17 +152,17 @@ func fetchRemoteEnvValuesComputation(s EnvResultState) E.Either[error, string] {
 	}
 	return E.Right[error](remoteEnvValues)
 }
-func getCurrentEnvValuesComputation(s EnvResultState) E.Either[error, string] {
+func getCurrentEnvValuesComputation(s EnvSyncState) E.Either[error, string] {
 	localEnvFile, err := getCurrentEnvValues()
 	if err != nil {
 		return E.Left[string](err)
 	}
 	return E.Right[error](localEnvFile)
 }
-func diffEnvValuesComputation(s EnvResultState) E.Either[error, domain.Diff] {
+func diffEnvValuesComputation(s EnvSyncState) E.Either[error, domain.Diff] {
 	return E.Right[error](diffEnvValues(s.LocalEnvValues, s.RemoteEnvValues))
 }
-func handleRight(s EnvResultState) error {
+func handleRight(s EnvSyncState) error {
 	showEnvUpdateSuccessMessage(s.DiffRemoteLocal.PrettyPrint())
 	return nil
 }
@@ -204,16 +221,15 @@ var ErrUnableToFetchRemoteEnvValues = errors.New("- Unable to fetch remote env v
 func fetchRemoteEnvValues(callbackUrl, accessToken string) (string, error) {
 	response, err := resty.New().
 		R().
-		EnableTrace().
 		SetHeader("Authorization", fmt.Sprintf("Bearer %s", accessToken)).
 		SetResult(&map[string]interface{}{}).
-		Get(callbackUrl)
+		SetBody(map[string]interface{}{"cmd": "pull"}).
+		Post(callbackUrl)
 
 	if err != nil {
 		return "", err
 	}
 	if response.IsError() {
-
 		return "", ErrUnableToFetchRemoteEnvValues
 	}
 	responseAsObject := *response.Result().(*map[string]interface{})

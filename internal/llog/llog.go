@@ -66,6 +66,14 @@ func StyleTitle() lipgloss.Style {
 		MarginBottom(1)
 }
 
+func SuccessStyle() lipgloss.Style {
+	return lipgloss.NewStyle().Foreground(lipgloss.Color(Tokens.SuccessColor)).Bold(true)
+}
+
+func ErrorStyle() lipgloss.Style {
+	return lipgloss.NewStyle().Foreground(lipgloss.Color(Tokens.ErrorColor)).Bold(true)
+}
+
 var L = log.New(os.Stderr)
 
 func init() {

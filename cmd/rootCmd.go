@@ -19,4 +19,6 @@ var RootCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(PullCmd)
 	RootCmd.AddCommand(AuthCmd)
+	RootCmd.AddCommand(PushCmd)
+	RootCmd.AddCommand(UndoCmd)
 }
