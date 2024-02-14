@@ -2,13 +2,10 @@ package cmd
 
 import (
 	"envi/internal/llog"
+	"envi/internal/provider"
 	"envi/internal/storage"
-	form "envi/internal/ui"
-	"fmt"
 
 	E "github.com/IBM/fp-go/either"
-	F "github.com/IBM/fp-go/function"
-	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 )
@@ -27,15 +24,16 @@ func AuthCmdRunE(cmd *cobra.Command, args []string) error {
 	applicationPath := storage.GetApplicationDataPath()
 	maybeTokenFromFlag := cmd.Flag("token").Value.String()
 
-	accessTokenE := F.Pipe1(
-		GetAccessToken(maybeTokenFromFlag, applicationPath),
-		E.Chain(F.Bind1st(PersistToken, applicationPath)),
-	)
+	if E.IsRight(provider.PersistToken(applicationPath, maybeTokenFromFlag)) {
+		showSuccessMessage()
+		return nil
+	}
 
-	_, err := E.Unwrap(accessTokenE)
+	_, err := E.Unwrap(provider.GetOrAskAndPersistToken(applicationPath))
 	if err != nil {
 		return err
 	}
+
 	showSuccessMessage()
 	return nil
 }
@@ -61,38 +59,6 @@ func showSuccessMessage() {
 	)
 
 	println(message)
-}
-
-func requestTokenToUser() string {
-	response := form.NewPrompt([]form.Question{
-		form.NewQuestion("Enter your token: ").
-			WithEchoMode(textinput.EchoPassword),
-	})
-	return response[0]
-}
-
-var ErrTokenNotProvided = fmt.Errorf("token not provided")
-
-func GetAccessToken(maybeTokenFromFlag, applicationDataPath string) E.Either[error, string] {
-	if maybeTokenFromFlag != "" {
-		return E.Right[error](maybeTokenFromFlag)
-	}
-
-	persistedToken, err := storage.AccessToken.Get()
-	if err == nil {
-		return E.Right[error](persistedToken)
-	}
-
-	tokenFromUserInput := requestTokenToUser()
-	if tokenFromUserInput != "" {
-		return E.Right[error](tokenFromUserInput)
-	}
-
-	return E.Left[string](ErrTokenNotProvided)
-}
-
-func PersistToken(path string, token string) E.Either[error, string] {
-	return E.FromError(storage.AccessToken.Save)(token)
 }
 
 func AuthIsLogged() bool {

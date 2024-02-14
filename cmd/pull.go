@@ -15,7 +15,6 @@ import (
 	E "github.com/IBM/fp-go/either"
 	F "github.com/IBM/fp-go/function"
 	l "github.com/charmbracelet/lipgloss"
-	"github.com/go-resty/resty/v2"
 	"github.com/spf13/cobra"
 )
 
@@ -59,8 +58,6 @@ func setter[T, S any](fieldName string) func(T) func(S) S {
 }
 
 type EnvSyncState struct {
-	AccessToken     string
-	CallbackURL     string
 	RemoteEnvValues string
 	LocalEnvValues  string
 	DiffRemoteLocal domain.Diff
@@ -82,17 +79,13 @@ func PullCmdFunc(cmd *cobra.Command, args []string) error {
 }
 
 func SyncEnvState() E.Either[error, EnvSyncState] {
-	accessTokenSetter := setter[string, EnvSyncState]("AccessToken")
-	callbackURLSetter := setter[string, EnvSyncState]("CallbackURL")
 	remoteEnvValuesSetter := setter[string, EnvSyncState]("RemoteEnvValues")
 	localEnvValuesSetter := setter[string, EnvSyncState]("LocalEnvValues")
 	diffRemoteLocalSetter := setter[domain.Diff, EnvSyncState]("DiffRemoteLocal")
 
-	eitherEnvSyncState := F.Pipe5(
+	eitherEnvSyncState := F.Pipe3(
 		E.Do[error](EnvSyncState{}),
-		E.Bind(accessTokenSetter, getAccessTokenComputation),
-		E.Bind(callbackURLSetter, getCallBackUrlComputation),
-		E.Bind(remoteEnvValuesSetter, fetchRemoteEnvValuesComputation),
+		E.Bind(remoteEnvValuesSetter, fetchRemoteEnvValuesComputation(provider.ZipperFetchRemoteEnvValues)),
 		E.Bind(localEnvValuesSetter, getCurrentEnvValuesComputation),
 		E.Bind(diffRemoteLocalSetter, diffEnvValuesComputation),
 	)
@@ -138,24 +131,24 @@ func SaveEnvFileIOEither(storageImp storage.LocalHistorySave, writeFile writeFil
 }
 
 func getAccessTokenComputation(s EnvSyncState) E.Either[error, string] {
-	path := storage.GetApplicationDataPath()
-	persistTokenFn := F.Bind1st(PersistToken, path)
-	return F.Pipe1(
-		GetAccessToken("", storage.GetApplicationDataPath()),
-		E.Chain(persistTokenFn),
-	)
+	return provider.GetOrAskAndPersistToken(storage.GetApplicationDataPath())
 }
+
 func getCallBackUrlComputation(s EnvSyncState) E.Either[error, string] {
 	return E.Right[error](provider.GetZipperProviderDefaultUrl())
 }
-func fetchRemoteEnvValuesComputation(s EnvSyncState) E.Either[error, string] {
-	doneFn := ui.ProgressBar("Fetching remote .env file...")
-	defer doneFn()
-	remoteEnvValues, err := fetchRemoteEnvValues(s.CallbackURL, s.AccessToken)
-	if err != nil {
-		return E.Left[string](err)
+func fetchRemoteEnvValuesComputation(fetchRemoteValueImplementation func() (string, error)) func(s EnvSyncState) E.Either[error, string] {
+	return func(s EnvSyncState) E.Either[error, string] {
+		doneFn := ui.ProgressBar("Fetching remote .env file...")
+		defer doneFn()
+
+		// remoteEnvValues, err := fetchRemoteEnvValues(s.CallbackURL, s.AccessToken)
+		remoteEnvValues, err := fetchRemoteValueImplementation()
+		if err != nil {
+			return E.Left[string](err)
+		}
+		return E.Right[error](remoteEnvValues)
 	}
-	return E.Right[error](remoteEnvValues)
 }
 func getCurrentEnvValuesComputation(s EnvSyncState) E.Either[error, string] {
 	localEnvFile, err := getCurrentEnvValues()
@@ -219,26 +212,6 @@ func getCurrentEnvValues() (string, error) {
 	}
 
 	return string(envFile), nil
-}
-
-var ErrUnableToFetchRemoteEnvValues = errors.New("- Unable to fetch remote env values, check your connection and credentials, then try again")
-
-func fetchRemoteEnvValues(callbackUrl, accessToken string) (string, error) {
-	response, err := resty.New().
-		R().
-		SetHeader("Authorization", fmt.Sprintf("Bearer %s", accessToken)).
-		SetResult(&map[string]interface{}{}).
-		SetBody(map[string]interface{}{"cmd": "pull"}).
-		Post(callbackUrl)
-
-	if err != nil {
-		return "", err
-	}
-	if response.IsError() {
-		return "", ErrUnableToFetchRemoteEnvValues
-	}
-	responseAsObject := *response.Result().(*map[string]interface{})
-	return responseAsObject["data"].(string), nil
 }
 
 func diffEnvValues(local string, remote string) domain.Diff {
