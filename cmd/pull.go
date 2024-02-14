@@ -46,17 +46,15 @@ func PullCmdFunc(cmd *cobra.Command, args []string) error {
 }
 
 func SyncEnvState() E.Either[error, EnvSyncState] {
-	remoteEnvValuesSetter := utils.Setter[string, EnvSyncState]("RemoteEnvValues")
-	localEnvValuesSetter := utils.Setter[string, EnvSyncState]("LocalEnvValues")
-	diffRemoteLocalSetter := utils.Setter[domain.Diff, EnvSyncState]("DiffRemoteLocal")
-
+	remoteEnvSetter := utils.Setter[string, EnvSyncState]("RemoteEnvValues")
+	localEnvSetter := utils.Setter[string, EnvSyncState]("LocalEnvValues")
+	diffEnvsSetter := utils.Setter[domain.Diff, EnvSyncState]("DiffRemoteLocal")
 	eitherEnvSyncState := F.Pipe3(
 		E.Do[error](EnvSyncState{}),
-		E.Bind(remoteEnvValuesSetter, fetchRemoteEnvComputation(provider.ZipperFetchRemoteEnvValues)),
-		E.Bind(localEnvValuesSetter, getCurrentEnvValuesComputation),
-		E.Bind(diffRemoteLocalSetter, diffEnvValuesComputation),
+		E.Bind(remoteEnvSetter, fetchRemoteEnvComputation(provider.ZipperFetchRemoteEnvValues)),
+		E.Bind(localEnvSetter, getLocalEnvComputation),
+		E.Bind(diffEnvsSetter, diffEnvsComputation),
 	)
-
 	return eitherEnvSyncState
 }
 
@@ -102,7 +100,6 @@ func fetchRemoteEnvComputation(fetchRemoteValueImplementation func() (string, er
 		doneFn := ui.ProgressBar("Fetching remote .env file...")
 		defer doneFn()
 
-		// remoteEnvValues, err := fetchRemoteEnvValues(s.CallbackURL, s.AccessToken)
 		remoteEnvValues, err := fetchRemoteValueImplementation()
 		if err != nil {
 			return E.Left[string](err)
@@ -110,14 +107,14 @@ func fetchRemoteEnvComputation(fetchRemoteValueImplementation func() (string, er
 		return E.Right[error](remoteEnvValues)
 	}
 }
-func getCurrentEnvValuesComputation(s EnvSyncState) E.Either[error, string] {
+func getLocalEnvComputation(s EnvSyncState) E.Either[error, string] {
 	localEnvFile, err := getCurrentEnvValues()
 	if err != nil {
 		return E.Left[string](err)
 	}
 	return E.Right[error](localEnvFile)
 }
-func diffEnvValuesComputation(s EnvSyncState) E.Either[error, domain.Diff] {
+func diffEnvsComputation(s EnvSyncState) E.Either[error, domain.Diff] {
 	return E.Right[error](diffEnvValues(s.LocalEnvValues, s.RemoteEnvValues))
 }
 func handleRight(s EnvSyncState) error {
