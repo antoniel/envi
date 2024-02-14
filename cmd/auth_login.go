@@ -92,7 +92,7 @@ func GetAccessToken(maybeTokenFromFlag, applicationDataPath string) E.Either[err
 }
 
 func PersistToken(path string, token string) E.Either[error, string] {
-	return E.FromError(storage.AccessToken.Set)(token)
+	return E.FromError(storage.AccessToken.Save)(token)
 }
 
 func AuthIsLogged() bool {

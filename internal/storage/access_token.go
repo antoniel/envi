@@ -23,7 +23,7 @@ func (accessToken) Get() (string, error) {
 var ErrUnableToPersistToken = fmt.Errorf("unable to persist token")
 var ErrInvalidToken = fmt.Errorf("invalid token")
 
-func (accessToken) Set(token string) error {
+func (accessToken) Save(token string) error {
 	path := GetApplicationDataPath()
 	if token == "" {
 		// return ErrInvalidToken,

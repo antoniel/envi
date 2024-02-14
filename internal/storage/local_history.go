@@ -5,6 +5,10 @@ import (
 	"os"
 )
 
+type LocalHistorySave interface {
+	Save(token string) error
+}
+
 const local_history_file_name = "local_history"
 
 type localHistory struct{}

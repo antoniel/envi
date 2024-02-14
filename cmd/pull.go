@@ -70,7 +70,7 @@ func PullCmdFunc(cmd *cobra.Command, args []string) error {
 	err := F.Pipe3(
 		SyncEnvState(),
 		E.Chain(backupEnvFileIOEither),
-		E.Chain(SaveEnvFileIOEither),
+		E.Chain(SaveEnvFileIOEither(storage.LocalHistory, os.WriteFile)),
 		E.Fold(F.Identity, handleRight),
 	)
 	if err != nil {
@@ -117,19 +117,24 @@ func backupEnvFileIOEither(s EnvSyncState) E.Either[error, EnvSyncState] {
 	return E.Right[error](s)
 }
 
-func SaveEnvFileIOEither(s EnvSyncState) E.Either[error, EnvSyncState] {
-	// Should keep the current .env file in storage.history before saving the new one
-	// This is to allow the user to undo the operation
-	storageError := storage.LocalHistory.Save(s.LocalEnvValues)
-	if errors.Is(storageError, storage.ErrUnableToPersistLocalHistory) {
-		return E.Left[EnvSyncState](storageError)
-	}
+type writeFileFn = func(string, []byte, os.FileMode) error
 
-	err := os.WriteFile(".env", []byte(s.RemoteEnvValues), 0666)
-	if err != nil {
-		return E.Left[EnvSyncState](fmt.Errorf("❌ error while saving .env file:\n%s", err))
+func SaveEnvFileIOEither(storageImp storage.LocalHistorySave, writeFile writeFileFn) func(s EnvSyncState) E.Either[error, EnvSyncState] {
+	return func(s EnvSyncState) E.Either[error, EnvSyncState] {
+		// Should keep the current .env file in storage.history before saving the new one
+		// This is to allow the user to undo the operation
+		storageError := storageImp.Save(s.LocalEnvValues)
+
+		if errors.Is(storageError, storage.ErrUnableToPersistLocalHistory) {
+			return E.Left[EnvSyncState](storageError)
+		}
+
+		err := writeFile(".env", []byte(s.RemoteEnvValues), 0666)
+		if err != nil {
+			return E.Left[EnvSyncState](fmt.Errorf("❌ error while saving .env file:\n%s", err))
+		}
+		return E.Right[error](s)
 	}
-	return E.Right[error](s)
 }
 
 func getAccessTokenComputation(s EnvSyncState) E.Either[error, string] {

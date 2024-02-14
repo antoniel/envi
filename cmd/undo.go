@@ -27,8 +27,9 @@ func UndoCmdFunc(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	F.Pipe1(
-		SaveEnvFileIOEither(EnvSyncState{RemoteEnvValues: prevEnv}),
+	F.Pipe2(
+		EnvSyncState{RemoteEnvValues: prevEnv},
+		SaveEnvFileIOEither(storage.LocalHistory, os.WriteFile),
 		E.Fold(
 			F.Identity,
 			func(_ EnvSyncState) error {
