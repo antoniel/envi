@@ -1,5 +1,7 @@
 github.com/IBM/fp-go v1.0.122 h1:FHSb5WhBwMYafF+faQAthZ6IM1OwpKVWR+oaxaLaYTk=
 github.com/IBM/fp-go v1.0.122/go.mod h1:qqstC2fZZZajHWYAIj6GGxqiKnnWiBjfJzGRcB3mqGs=
+github.com/KyleBanks/depth v1.2.1 h1:5h8fQADFrWtarTdtDudMmGsC7GPbOAu6RVB3ffsVFHc=
+github.com/KyleBanks/depth v1.2.1/go.mod h1:jzSb9d0L43HxTQfT+oSA1EEp2q+ne2uh6XgeJcm8brE=
 github.com/atotto/clipboard v0.1.4 h1:EH0zSVneZPSuFR11BlR9YppQTVDbh5+16AmcJi4g1z4=
 github.com/atotto/clipboard v0.1.4/go.mod h1:ZY9tmq7sm5xIbd9bOK4onWV4S6X0u6GY7Vn0Yu86PYI=
 github.com/aymanbagabas/go-osc52/v2 v2.0.1 h1:HwpRHbFMcZLEVr42D4p7XBqjyuxQH5SMiErDT4WkJ2k=

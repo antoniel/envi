@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	auth_cmd "envi/cmd/auth"
+
 	"github.com/spf13/cobra"
 )
 
@@ -18,7 +20,7 @@ var RootCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(PullCmd)
-	RootCmd.AddCommand(AuthCmd)
+	RootCmd.AddCommand(auth_cmd.AuthCmd)
 	RootCmd.AddCommand(PushCmd)
 	RootCmd.AddCommand(UndoCmd)
 }

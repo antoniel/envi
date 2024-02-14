@@ -12,12 +12,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 )
 
-func getAccessToken(maybeTokenFromFlag, applicationDataPath string) E.Either[error, string] {
-
-	if maybeTokenFromFlag != "" {
-		return E.Right[error](maybeTokenFromFlag)
-	}
-
+func getAccessToken(applicationDataPath string) E.Either[error, string] {
 	persistedToken, err := storage.AccessToken.Get()
 	if err == nil {
 		return E.Right[error](persistedToken)
@@ -48,7 +43,7 @@ func GetOrAskAndPersistToken(applicationDataPath string) E.Either[error, string]
 	path := storage.GetApplicationDataPath()
 	persistTokenFn := F.Bind1st(PersistToken, path)
 	return F.Pipe1(
-		getAccessToken("", storage.GetApplicationDataPath()),
+		getAccessToken(storage.GetApplicationDataPath()),
 		E.Chain(persistTokenFn),
 	)
 }

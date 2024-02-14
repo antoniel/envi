@@ -6,10 +6,10 @@ import (
 	"envi/internal/provider"
 	"envi/internal/storage"
 	"envi/internal/ui"
+	"envi/internal/utils"
 	"errors"
 	"fmt"
 	"os"
-	"reflect"
 	"time"
 
 	E "github.com/IBM/fp-go/either"
@@ -22,39 +22,6 @@ var PullCmd = &cobra.Command{
 	Use:   "pull",
 	Short: "Pulls the latest .env file from the remote server and replaces the local .env file with it.",
 	RunE:  PullCmdFunc,
-}
-
-func GeneralSetter[T any, S any](fieldName string, fieldValue T, state S) S {
-	val := reflect.ValueOf(state)
-	if val.Kind() == reflect.Ptr {
-		val = val.Elem()
-	}
-
-	// Make sure we're dealing with a struct
-	if val.Kind() != reflect.Struct {
-		panic("❌ State must be a struct or a pointer to struct")
-	}
-
-	// Make a copy of the struct to avoid mutating the original
-	newState := reflect.New(val.Type()).Elem()
-	newState.Set(val)
-
-	// Set the field value
-	fld := newState.FieldByName(fieldName)
-	if fld.IsValid() && fld.CanSet() {
-		fld.Set(reflect.ValueOf(fieldValue))
-	} else {
-		panic(fmt.Sprintf("🚨 Field `%s` not found or not settable, error at `GeneralSetter`", fieldName))
-	}
-
-	return newState.Interface().(S)
-}
-
-func setter[T, S any](fieldName string) func(T) func(S) S {
-	type TypeOfGeneralSetter = func(string, T, S) S
-	generalSetterBound := F.Bind1of3[TypeOfGeneralSetter](GeneralSetter)(fieldName)
-	type TypeOfGeneralSetterBound = func(T, S) S
-	return F.Curry2[TypeOfGeneralSetterBound](generalSetterBound)
 }
 
 type EnvSyncState struct {
@@ -79,13 +46,13 @@ func PullCmdFunc(cmd *cobra.Command, args []string) error {
 }
 
 func SyncEnvState() E.Either[error, EnvSyncState] {
-	remoteEnvValuesSetter := setter[string, EnvSyncState]("RemoteEnvValues")
-	localEnvValuesSetter := setter[string, EnvSyncState]("LocalEnvValues")
-	diffRemoteLocalSetter := setter[domain.Diff, EnvSyncState]("DiffRemoteLocal")
+	remoteEnvValuesSetter := utils.Setter[string, EnvSyncState]("RemoteEnvValues")
+	localEnvValuesSetter := utils.Setter[string, EnvSyncState]("LocalEnvValues")
+	diffRemoteLocalSetter := utils.Setter[domain.Diff, EnvSyncState]("DiffRemoteLocal")
 
 	eitherEnvSyncState := F.Pipe3(
 		E.Do[error](EnvSyncState{}),
-		E.Bind(remoteEnvValuesSetter, fetchRemoteEnvValuesComputation(provider.ZipperFetchRemoteEnvValues)),
+		E.Bind(remoteEnvValuesSetter, fetchRemoteEnvComputation(provider.ZipperFetchRemoteEnvValues)),
 		E.Bind(localEnvValuesSetter, getCurrentEnvValuesComputation),
 		E.Bind(diffRemoteLocalSetter, diffEnvValuesComputation),
 	)
@@ -130,14 +97,7 @@ func SaveEnvFileIOEither(storageImp storage.LocalHistorySave, writeFile writeFil
 	}
 }
 
-func getAccessTokenComputation(s EnvSyncState) E.Either[error, string] {
-	return provider.GetOrAskAndPersistToken(storage.GetApplicationDataPath())
-}
-
-func getCallBackUrlComputation(s EnvSyncState) E.Either[error, string] {
-	return E.Right[error](provider.GetZipperProviderDefaultUrl())
-}
-func fetchRemoteEnvValuesComputation(fetchRemoteValueImplementation func() (string, error)) func(s EnvSyncState) E.Either[error, string] {
+func fetchRemoteEnvComputation(fetchRemoteValueImplementation func() (string, error)) func(s EnvSyncState) E.Either[error, string] {
 	return func(s EnvSyncState) E.Either[error, string] {
 		doneFn := ui.ProgressBar("Fetching remote .env file...")
 		defer doneFn()
