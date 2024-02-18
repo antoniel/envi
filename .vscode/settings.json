@@ -1,7 +1,8 @@
 {
   "workbench.colorTheme": "Aura Dark",
   "files.exclude": {
-    "tmp": false
+    "tmp": true,
+    "apps/envi-cli": true
   },
   "cSpell.words": ["envii", "llog"]
 }
