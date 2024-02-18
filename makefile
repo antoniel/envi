@@ -6,4 +6,4 @@ buildserver:
 	@go build -o bin/server cmd/server/main.go
 
 devapi:
-	@gow -c run apps/api/main.go
+	@gow -c run ./apps/api 
