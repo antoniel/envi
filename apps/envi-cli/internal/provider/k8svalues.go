@@ -15,7 +15,7 @@ func GetK8sProviderDefaultUrl() string {
 }
 
 // Loads the remote env value from a path locally
-func K8sPullRemoteEnvValues(k8sValuesPath string) func() (string, error) {
+func K8sPullRemoteEnvValuesConstructor(k8sValuesPath string) func() (string, error) {
 	return func() (string, error) {
 		getK8sFileContent(k8sValuesPath)
 		return E.Unwrap(F.Pipe2(

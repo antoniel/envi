@@ -30,9 +30,37 @@ type EnvSyncState struct {
 	DiffRemoteLocal domain.Diff
 }
 
+func GetPullFn(cmd *cobra.Command) (provider.PullFn, error) {
+	noop := func() (string, error) {
+		return "", nil
+	}
+	validProviders := []string{"zipper", "k8s"}
+	providerType := cmd.Flag("provider").Value.String()
+	k8sValuesPath := cmd.Flag("k8s-values-path").Value.String()
+
+	if !utils.Contains(validProviders, providerType) {
+		return nil, errors.New("❌ invalid provider type")
+	}
+
+	if providerType == "k8s" {
+		if k8sValuesPath == "" {
+			return noop, errors.New("❌ k8s-values-path flag is required when using k8s provider")
+		}
+		return provider.K8sPullRemoteEnvValuesConstructor(k8sValuesPath), nil
+	}
+
+	return provider.ZipperPullRemoteEnvValues, nil
+}
+
 func PullCmdFunc(cmd *cobra.Command, args []string) error {
+	pullFn, errPullFn := GetPullFn(cmd)
+
+	if errPullFn != nil {
+		return errPullFn
+	}
+
 	err := F.Pipe3(
-		SyncEnvState(provider.ZipperPullRemoteEnvValues),
+		SyncEnvState(pullFn),
 		E.Chain(backupEnvFileIOEither),
 		E.Chain(SaveEnvFileIOEither(storage.LocalHistory, os.WriteFile)),
 		E.Fold(F.Identity, handleRight),

@@ -25,6 +25,9 @@ var RootCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(pull.PullCmd)
+	RootCmd.PersistentFlags().StringP("provider", "p", "zipper", "Provider to use to pull the .env file: zipper | k8s")
+	RootCmd.PersistentFlags().StringP("k8s-values-path", "k", "", "Path to the k8s values file")
+
 	RootCmd.AddCommand(auth.AuthCmd)
 	RootCmd.AddCommand(push.PushCmd)
 	RootCmd.AddCommand(undo.UndoCmd)

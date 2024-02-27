@@ -39,3 +39,12 @@ func Setter[TValue, TState any](fieldName string) func(TValue) func(TState) TSta
 	type TypeOfGeneralSetterBound = func(TValue, TState) TState
 	return F.Curry2[TypeOfGeneralSetterBound](generalSetterBound)
 }
+
+func Contains[T comparable](s []T, e T) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
+}
