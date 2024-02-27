@@ -13,6 +13,8 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 )
 
+type PullFn func() (string, error)
+
 func getAccessToken(applicationDataPath string) E.Either[error, string] {
 	persistedToken, err := storage.AccessToken.Get()
 	if err == nil {

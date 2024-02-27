@@ -32,7 +32,7 @@ type EnvSyncState struct {
 
 func PullCmdFunc(cmd *cobra.Command, args []string) error {
 	err := F.Pipe3(
-		SyncEnvState(),
+		SyncEnvState(provider.ZipperPullRemoteEnvValues),
 		E.Chain(backupEnvFileIOEither),
 		E.Chain(SaveEnvFileIOEither(storage.LocalHistory, os.WriteFile)),
 		E.Fold(F.Identity, handleRight),
@@ -45,14 +45,14 @@ func PullCmdFunc(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func SyncEnvState() E.Either[error, EnvSyncState] {
+func SyncEnvState(pullFn provider.PullFn) E.Either[error, EnvSyncState] {
 	remoteEnvSetter := utils.Setter[string, EnvSyncState]("RemoteEnvValues")
 	localEnvSetter := utils.Setter[string, EnvSyncState]("LocalEnvValues")
 	diffEnvsSetter := utils.Setter[domain.Diff, EnvSyncState]("DiffRemoteLocal")
 
 	eitherEnvSyncState := F.Pipe3(
 		E.Do[error](EnvSyncState{}),
-		E.Bind(remoteEnvSetter, fetchRemoteEnvComputation(provider.ZipperFetchRemoteEnvValues)),
+		E.Bind(remoteEnvSetter, fetchRemoteEnvComputation(pullFn)),
 		E.Bind(localEnvSetter, getLocalEnvComputation),
 		E.Bind(diffEnvsSetter, diffEnvsComputation),
 	)

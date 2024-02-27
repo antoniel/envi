@@ -9,17 +9,17 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
-func GetZipperProviderDefaultUrl() string {
+func getZipperProviderDefaultUrl() string {
 	return "https://envii.zipper.run/api"
 }
 
-func ZipperFetchRemoteEnvValues() (string, error) {
+func ZipperPullRemoteEnvValues() (string, error) {
 	path := storage.GetApplicationDataPath()
 	accessToken, err := E.Unwrap(GetOrAskAndPersistToken(path))
 	if err != nil {
 		return "", err
 	}
-	callbackUrl := GetZipperProviderDefaultUrl()
+	callbackUrl := getZipperProviderDefaultUrl()
 	response, err := resty.New().
 		R().
 		SetHeader("Authorization", fmt.Sprintf("Bearer %s", accessToken)).
@@ -61,7 +61,7 @@ func ZipperPushLocalEnvsToRemote(localEnvValues string) E.Either[error, string] 
 	if err != nil {
 		return E.Left[string](err)
 	}
-	callbackUrl := GetZipperProviderDefaultUrl()
+	callbackUrl := getZipperProviderDefaultUrl()
 
 	response, err := resty.New().
 		R().
