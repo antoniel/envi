@@ -33,9 +33,9 @@ func generalSetter[T any, S any](fieldName string, fieldValue T, state S) S {
 	return newState.Interface().(S)
 }
 
-func Setter[T, S any](fieldName string) func(T) func(S) S {
-	type TypeOfGeneralSetter = func(string, T, S) S
+func Setter[TValue, TState any](fieldName string) func(TValue) func(TState) TState {
+	type TypeOfGeneralSetter = func(string, TValue, TState) TState
 	generalSetterBound := F.Bind1of3[TypeOfGeneralSetter](generalSetter)(fieldName)
-	type TypeOfGeneralSetterBound = func(T, S) S
+	type TypeOfGeneralSetterBound = func(TValue, TState) TState
 	return F.Curry2[TypeOfGeneralSetterBound](generalSetterBound)
 }

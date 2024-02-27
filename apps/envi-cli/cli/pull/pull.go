@@ -49,6 +49,7 @@ func SyncEnvState() E.Either[error, EnvSyncState] {
 	remoteEnvSetter := utils.Setter[string, EnvSyncState]("RemoteEnvValues")
 	localEnvSetter := utils.Setter[string, EnvSyncState]("LocalEnvValues")
 	diffEnvsSetter := utils.Setter[domain.Diff, EnvSyncState]("DiffRemoteLocal")
+
 	eitherEnvSyncState := F.Pipe3(
 		E.Do[error](EnvSyncState{}),
 		E.Bind(remoteEnvSetter, fetchRemoteEnvComputation(provider.ZipperFetchRemoteEnvValues)),
