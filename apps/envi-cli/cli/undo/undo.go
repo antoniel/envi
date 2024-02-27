@@ -1,9 +1,9 @@
 package undo
 
 import (
-	"envi/cli/pull"
-	"envi/internal/llog"
-	"envi/internal/storage"
+	"envi/apps/envi-cli/cli/pull"
+	"envi/apps/envi-cli/internal/llog"
+	"envi/apps/envi-cli/internal/storage"
 	"errors"
 	"fmt"
 	"os"

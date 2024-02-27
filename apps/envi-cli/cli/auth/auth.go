@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"envi/internal/llog"
+	"envi/apps/envi-cli/internal/llog"
 	"fmt"
 
 	l "github.com/charmbracelet/lipgloss"

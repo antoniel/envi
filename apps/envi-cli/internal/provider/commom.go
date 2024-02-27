@@ -1,9 +1,9 @@
 package provider
 
 import (
-	"envi/internal/llog"
-	"envi/internal/storage"
-	"envi/internal/ui"
+	"envi/apps/envi-cli/internal/llog"
+	"envi/apps/envi-cli/internal/storage"
+	"envi/apps/envi-cli/internal/ui"
 	"errors"
 	"fmt"
 

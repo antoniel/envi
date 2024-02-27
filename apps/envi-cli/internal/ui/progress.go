@@ -1,7 +1,7 @@
 package ui
 
 import (
-	"envi/internal/llog"
+	"envi/apps/envi-cli/internal/llog"
 	"os"
 	"time"
 

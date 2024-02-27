@@ -1,12 +1,12 @@
 package pull
 
 import (
-	"envi/internal/domain"
-	"envi/internal/llog"
-	"envi/internal/provider"
-	"envi/internal/storage"
-	"envi/internal/ui"
-	"envi/internal/utils"
+	"envi/apps/envi-cli/internal/domain"
+	"envi/apps/envi-cli/internal/llog"
+	"envi/apps/envi-cli/internal/provider"
+	"envi/apps/envi-cli/internal/storage"
+	"envi/apps/envi-cli/internal/ui"
+	"envi/apps/envi-cli/internal/utils"
 	"errors"
 	"fmt"
 	"os"

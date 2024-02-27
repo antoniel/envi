@@ -5,5 +5,8 @@ buildcli:
 buildserver:
 	@go build -o bin/server cmd/server/main.go
 
-devapi:
+api:
 	@gow -c run ./apps/api 
+
+cli:
+	@go run ./apps/envi-cli/main.go

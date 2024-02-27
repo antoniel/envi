@@ -1,7 +1,7 @@
 package pull_test
 
 import (
-	pull "envi/cli/pull"
+	"envi/apps/envi-cli/cli/pull"
 	"os"
 	"testing"
 

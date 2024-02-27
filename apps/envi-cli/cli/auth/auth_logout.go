@@ -1,8 +1,8 @@
 package auth
 
 import (
-	"envi/internal/llog"
-	"envi/internal/storage"
+	"envi/apps/envi-cli/internal/llog"
+	"envi/apps/envi-cli/internal/storage"
 	"fmt"
 
 	l "github.com/charmbracelet/lipgloss"

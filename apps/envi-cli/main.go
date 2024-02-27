@@ -1,10 +1,10 @@
 package main
 
 import (
-	"envi/cli/auth"
-	"envi/cli/pull"
-	"envi/cli/push"
-	"envi/cli/undo"
+	"envi/apps/envi-cli/cli/auth"
+	"envi/apps/envi-cli/cli/pull"
+	"envi/apps/envi-cli/cli/push"
+	"envi/apps/envi-cli/cli/undo"
 	"fmt"
 	"os"
 

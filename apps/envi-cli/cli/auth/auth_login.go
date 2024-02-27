@@ -1,9 +1,9 @@
 package auth
 
 import (
-	"envi/internal/llog"
-	"envi/internal/provider"
-	"envi/internal/storage"
+	"envi/apps/envi-cli/internal/llog"
+	"envi/apps/envi-cli/internal/provider"
+	"envi/apps/envi-cli/internal/storage"
 
 	E "github.com/IBM/fp-go/either"
 	"github.com/charmbracelet/lipgloss"

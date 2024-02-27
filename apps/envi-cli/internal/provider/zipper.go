@@ -1,7 +1,7 @@
 package provider
 
 import (
-	"envi/internal/storage"
+	"envi/apps/envi-cli/internal/storage"
 	"fmt"
 	"time"
 
