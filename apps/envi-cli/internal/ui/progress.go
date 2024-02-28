@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"envi/apps/envi-cli/internal/domain"
 	"envi/apps/envi-cli/internal/llog"
 	"os"
 	"time"
@@ -17,6 +18,7 @@ type model struct {
 	progress  progress.Model
 	title     string
 	didFinish bool
+	provider  domain.Provider
 }
 
 func (m model) Init() tea.Cmd {
@@ -58,7 +60,7 @@ func (m model) View() string {
 		lipgloss.Top,
 		llog.HelpStyle().Render(m.title),
 		m.progress.View(),
-		llog.HelpStyle().Render("Current provider: "+boldStyle.Render("Zipper")),
+		llog.HelpStyle().Render("Current provider: "+boldStyle.Render(string(m.provider))),
 	)
 }
 
@@ -72,14 +74,18 @@ func tickCmd() tea.Cmd {
 	})
 }
 
-func ProgressBar(title string) func() {
+func ProgressBar(title string, provider domain.Provider) func() {
 	defaultOpts := []progress.Option{
 		progress.WithDefaultGradient(),
 		progress.WithoutPercentage(),
 	}
 
 	doneCh := make(chan bool)
-	m := model{progress: progress.New(defaultOpts...), title: title}
+	m := model{
+		progress: progress.New(defaultOpts...),
+		title:    title,
+		provider: provider,
+	}
 	program := tea.NewProgram(m)
 	go goRunProgram(program, doneCh)
 
