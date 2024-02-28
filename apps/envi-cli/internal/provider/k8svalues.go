@@ -26,23 +26,20 @@ func K8sPullRemoteEnvValuesConstructor(k8sValuesPath string) func() (string, err
 	}
 }
 func getK8sFileContent(k8sValuesPath string) E.Either[error, []byte] {
-	// absPath := getAbsolutePath(k8sValuesPath)
-	var absPath string
-	if filepath.IsAbs(k8sValuesPath) {
-		absPath = k8sValuesPath
+	joinErr := func(errs ...error) error {
+		return errors.Join(
+			append([]error{errors.New("GetK8sFileContent ")}, errs...)...)
 	}
-	wd, err := os.Getwd()
+	absPath, err := getAbsolutePath(k8sValuesPath)
 	if err != nil {
-		return E.Left[[]byte](errors.New("❌ unable to get current working directory"))
+		return E.Left[[]byte](joinErr(err))
 	}
-	absPath = filepath.Join(wd, k8sValuesPath)
 	file, err := os.Stat(absPath)
 	if err != nil {
-		getErr := errors.New("❌ unable to get k8s values path")
-		return E.Left[[]byte](getErr)
+		return E.Left[[]byte](joinErr(errors.New("❌ unable to get k8s values path"), err))
 	}
 	if filepath.Ext(absPath) != ".yaml" {
-		return E.Left[[]byte](errors.New("❌ k8s values path is not a yaml file"))
+		return E.Left[[]byte](joinErr(errors.New("❌ k8s values path is not a yaml file")))
 	}
 	if file.IsDir() {
 		return E.Left[[]byte](errors.New("❌ k8s values path is a directory"))
@@ -52,6 +49,19 @@ func getK8sFileContent(k8sValuesPath string) E.Either[error, []byte] {
 		return E.Left[[]byte](errors.Join(errors.New("❌ unable to read k8s values path"), err))
 	}
 	return E.Right[error](b)
+}
+func getAbsolutePath(k8sValuesPath string) (string, error) {
+	var absPath string
+	if filepath.IsAbs(k8sValuesPath) {
+		return k8sValuesPath, nil
+	}
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	absPath = filepath.Join(wd, k8sValuesPath)
+	return absPath, nil
 }
 
 type k8sValuesEnv struct {
