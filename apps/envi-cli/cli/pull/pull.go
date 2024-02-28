@@ -37,6 +37,7 @@ func GetPullFn(cmd *cobra.Command) (provider.PullFn, error) {
 	validProviders := []string{"zipper", "k8s"}
 	providerType := cmd.Flag("provider").Value.String()
 	k8sValuesPath := cmd.Flag("k8s-values-path").Value.String()
+	secretsDeclaration := cmd.Flag("secrets-declaration").Value.String()
 
 	if !utils.Contains(validProviders, providerType) {
 		return nil, errors.New("❌ invalid provider type")
@@ -46,7 +47,12 @@ func GetPullFn(cmd *cobra.Command) (provider.PullFn, error) {
 		if k8sValuesPath == "" {
 			return noop, errors.New("❌ k8s-values-path flag is required when using k8s provider")
 		}
-		return provider.K8sPullRemoteEnvValuesConstructor(k8sValuesPath), nil
+		return provider.K8sPullRemoteEnvValuesConstructor(
+			k8sValuesPath,
+			secretsDeclaration,
+			provider.WithPullSecrets{
+				Enabled: secretsDeclaration != "",
+			}), nil
 	}
 
 	return provider.ZipperPullRemoteEnvValues, nil
