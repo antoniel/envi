@@ -1,7 +1,7 @@
 package domain
 
 import (
-	"engov/apps/cli/internal/llog"
+	"envii/apps/cli/internal/llog"
 	"strings"
 
 	A "github.com/IBM/fp-go/array"

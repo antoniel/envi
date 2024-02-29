@@ -1,6 +1,6 @@
 package initializers
 
-import model "engov/apps/api/models"
+import model "envii/apps/api/models"
 
 func SyncDb() {
 	DB.AutoMigrate(&model.User{})

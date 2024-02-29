@@ -14,7 +14,7 @@ const local_history_file_name = "local_history"
 type localHistory struct{}
 
 // Local history will persist the last .env that was overwritten by the user
-// using the `engov pull` command.
+// using the `envii pull` command.
 var LocalHistory = localHistory{}
 
 func (localHistory) Get() (string, error) {

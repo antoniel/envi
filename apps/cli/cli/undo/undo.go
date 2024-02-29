@@ -1,9 +1,9 @@
 package undo
 
 import (
-	"engov/apps/cli/cli/pull"
-	"engov/apps/cli/internal/llog"
-	"engov/apps/cli/internal/storage"
+	"envii/apps/cli/cli/pull"
+	"envii/apps/cli/internal/llog"
+	"envii/apps/cli/internal/storage"
 	"errors"
 	"fmt"
 	"os"
@@ -15,7 +15,7 @@ import (
 
 var UndoCmd = &cobra.Command{
 	Use:   "undo",
-	Short: "undoes the last `engov pull` command",
+	Short: "undoes the last `envii pull` command",
 	RunE:  UndoCmdFunc,
 }
 

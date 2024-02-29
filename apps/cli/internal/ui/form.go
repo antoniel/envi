@@ -1,7 +1,7 @@
 package ui
 
 import (
-	"engov/apps/cli/internal/llog"
+	"envii/apps/cli/internal/llog"
 	"log"
 
 	A "github.com/IBM/fp-go/array"

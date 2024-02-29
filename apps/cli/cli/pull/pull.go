@@ -1,12 +1,12 @@
 package pull
 
 import (
-	"engov/apps/cli/internal/domain"
-	"engov/apps/cli/internal/llog"
-	"engov/apps/cli/internal/provider"
-	"engov/apps/cli/internal/storage"
-	"engov/apps/cli/internal/ui"
-	"engov/apps/cli/internal/utils"
+	"envii/apps/cli/internal/domain"
+	"envii/apps/cli/internal/llog"
+	"envii/apps/cli/internal/provider"
+	"envii/apps/cli/internal/storage"
+	"envii/apps/cli/internal/ui"
+	"envii/apps/cli/internal/utils"
 	"errors"
 	"fmt"
 	"os"
@@ -177,7 +177,7 @@ func showEnvUpdateSuccessMessage(diffPrintStr string) {
 		Render(".env file updated successfully.")
 	undoHintMessage := styleHint.Render(
 		"To undo this operation, use",
-		llog.StyleCommand().Render("`engov undo`"))
+		llog.StyleCommand().Render("`envii undo`"))
 
 	message := l.JoinVertical(l.Left, successMessage, diffPrintStr, undoHintMessage)
 

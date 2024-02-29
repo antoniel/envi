@@ -5,9 +5,9 @@ before:
     - go mod tidy
 
 builds:
-  - id: "engov_build"
+  - id: "envii_build"
     dir: ./apps/cli/
-    binary: engov
+    binary: envii
     env:
       - CGO_ENABLED=0
     goos:

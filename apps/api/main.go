@@ -1,7 +1,7 @@
 package main
 
 import (
-	"engov/apps/api/initializers"
+	"envii/apps/api/initializers"
 
 	"github.com/labstack/echo"
 )

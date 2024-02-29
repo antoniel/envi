@@ -2,8 +2,8 @@ package provider
 
 import (
 	"context"
-	"engov/apps/cli/internal/domain"
-	"engov/apps/cli/internal/llog"
+	"envii/apps/cli/internal/domain"
+	"envii/apps/cli/internal/llog"
 	"errors"
 	"fmt"
 	"os"

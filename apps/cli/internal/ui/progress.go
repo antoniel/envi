@@ -1,8 +1,8 @@
 package ui
 
 import (
-	"engov/apps/cli/internal/domain"
-	"engov/apps/cli/internal/llog"
+	"envii/apps/cli/internal/domain"
+	"envii/apps/cli/internal/llog"
 	"os"
 	"time"
 

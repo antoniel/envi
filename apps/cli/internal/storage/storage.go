@@ -20,7 +20,7 @@ func initTaskDir(path string) error {
 func GetApplicationDataPath() string {
 
 	// get XDG paths
-	scope := gap.NewScope(gap.User, "engov-storage")
+	scope := gap.NewScope(gap.User, "envii-storage")
 	dirs, err := scope.DataDirs()
 	if err != nil {
 		log.Fatal(err)
