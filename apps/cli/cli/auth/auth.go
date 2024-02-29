@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"envi/apps/envi-cli/internal/llog"
+	"engov/apps/cli/internal/llog"
 	"fmt"
 
 	l "github.com/charmbracelet/lipgloss"
@@ -10,7 +10,7 @@ import (
 
 var AuthCmd = &cobra.Command{
 	Use:   "auth",
-	Short: "Display commands for authenticating envi with an account",
+	Short: "Display commands for authenticating engov with an account",
 	RunE:  AuthCmdE,
 }
 
@@ -48,7 +48,7 @@ func showLoginMessage() {
 
 	title := styleTitle.Render("Authenticated with Zipper:")
 	loginStatus := hint().Render("You are currently logged using the Zipper provider.")
-	logoutMessage := hint().Italic(true).Render("To log out, use", cmd.Render("`envi auth logout`."))
+	logoutMessage := hint().Italic(true).Render("To log out, use", cmd.Render("`engov auth logout`."))
 
 	message := l.JoinVertical(
 		l.Left,

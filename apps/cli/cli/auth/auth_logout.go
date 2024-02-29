@@ -1,8 +1,8 @@
 package auth
 
 import (
-	"envi/apps/envi-cli/internal/llog"
-	"envi/apps/envi-cli/internal/storage"
+	"engov/apps/cli/internal/llog"
+	"engov/apps/cli/internal/storage"
 	"fmt"
 
 	l "github.com/charmbracelet/lipgloss"
@@ -11,7 +11,7 @@ import (
 
 var AuthLogoutCmd = &cobra.Command{
 	Use:   "logout",
-	Short: "Logout to envi",
+	Short: "Logout to engov",
 	RunE:  AuthLogOutCmdRunE,
 }
 

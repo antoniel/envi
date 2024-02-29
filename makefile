@@ -9,4 +9,4 @@ api:
 	@gow -c run ./apps/api 
 
 cli:
-	@go run ./apps/envi-cli/main.go
+	@go run ./apps/cli/main.go

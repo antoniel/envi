@@ -1,10 +1,10 @@
 package push
 
 import (
-	"envi/apps/envi-cli/cli/pull"
-	"envi/apps/envi-cli/internal/llog"
-	"envi/apps/envi-cli/internal/provider"
-	"envi/apps/envi-cli/internal/ui"
+	"engov/apps/cli/cli/pull"
+	"engov/apps/cli/internal/llog"
+	"engov/apps/cli/internal/provider"
+	"engov/apps/cli/internal/ui"
 	"fmt"
 
 	E "github.com/IBM/fp-go/either"

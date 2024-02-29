@@ -1,9 +1,9 @@
 package auth
 
 import (
-	"envi/apps/envi-cli/internal/llog"
-	"envi/apps/envi-cli/internal/provider"
-	"envi/apps/envi-cli/internal/storage"
+	"engov/apps/cli/internal/llog"
+	"engov/apps/cli/internal/provider"
+	"engov/apps/cli/internal/storage"
 
 	E "github.com/IBM/fp-go/either"
 	"github.com/charmbracelet/lipgloss"
@@ -12,7 +12,7 @@ import (
 
 var AuthLoginCmd = &cobra.Command{
 	Use:   "login",
-	Short: "Login to envi",
+	Short: "Login to engov",
 	RunE:  AuthCmdRunE,
 }
 
@@ -48,9 +48,9 @@ func showSuccessMessage() {
 		MarginBottom(1)
 
 	title := styleTitle.Render("Authenticated! Quick Commands:")
-	cmdPull := styleCommand.PaddingLeft(2).Render("`envi pull`:")
-	cmdAuth := styleCommand.PaddingLeft(2).Render("`envi auth`:")
-	helpText := styleText.Render("For more, `envi --help`.")
+	cmdPull := styleCommand.PaddingLeft(2).Render("`engov pull`:")
+	cmdAuth := styleCommand.PaddingLeft(2).Render("`engov auth`:")
+	helpText := styleText.Render("For more, `engov --help`.")
 
 	message := lipgloss.JoinVertical(lipgloss.Left, title,
 		lipgloss.JoinHorizontal(lipgloss.Left, cmdPull, styleText.Render("Sync .env files.")),

@@ -1,9 +1,9 @@
 package undo
 
 import (
-	"envi/apps/envi-cli/cli/pull"
-	"envi/apps/envi-cli/internal/llog"
-	"envi/apps/envi-cli/internal/storage"
+	"engov/apps/cli/cli/pull"
+	"engov/apps/cli/internal/llog"
+	"engov/apps/cli/internal/storage"
 	"errors"
 	"fmt"
 	"os"
@@ -15,7 +15,7 @@ import (
 
 var UndoCmd = &cobra.Command{
 	Use:   "undo",
-	Short: "undoes the last `envi pull` command",
+	Short: "undoes the last `engov pull` command",
 	RunE:  UndoCmdFunc,
 }
 
