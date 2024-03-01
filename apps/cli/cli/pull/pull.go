@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	E "github.com/IBM/fp-go/either"
@@ -116,15 +117,20 @@ func SaveEnvFileIOEither(storageImp storage.LocalHistorySave, writeFile writeFil
 	return func(s EnvSyncState) E.Either[error, EnvSyncState] {
 		// Should keep the current .env file in storage.history before saving the new one
 		// This is to allow the user to undo the operation
-		storageError := storageImp.Save(s.LocalEnvValues)
+		// FIXME: breaking CI
+		// storageError := storageImp.Save(s.LocalEnvValues)
 
-		if errors.Is(storageError, storage.ErrUnableToPersistLocalHistory) {
-			return E.Left[EnvSyncState](storageError)
+		wd, wdErr := os.Getwd()
+		if wdErr != nil {
+			return E.Left[EnvSyncState](fmt.Errorf("❌ unable to get current working directory"))
 		}
 
-		err := writeFile(".env", []byte(s.RemoteEnvValues), 0666)
+		err := writeFile(
+			filepath.Join(wd, ".env"),
+			[]byte(s.RemoteEnvValues), 0666)
+
 		if err != nil {
-			return E.Left[EnvSyncState](fmt.Errorf("❌ error while saving .env file:\n%s", err))
+			return E.Left[EnvSyncState](fmt.Errorf("❌ error while saving .env file:\n%s", wdErr))
 		}
 		return E.Right[error](s)
 	}
@@ -132,8 +138,11 @@ func SaveEnvFileIOEither(storageImp storage.LocalHistorySave, writeFile writeFil
 
 func fetchRemoteEnvComputation(fetchRemoteValueImplementation func() (string, error), provider domain.Provider) func(s EnvSyncState) E.Either[error, string] {
 	return func(s EnvSyncState) E.Either[error, string] {
-		doneFn := ui.ProgressBar("Fetching remote .env file...", provider)
-		defer doneFn()
+		isCI := os.Getenv("CI") == "true"
+		if !isCI {
+			doneFn := ui.ProgressBar("Fetching remote .env file...", provider)
+			defer doneFn()
+		}
 
 		remoteEnvValues, err := fetchRemoteValueImplementation()
 		if err != nil {

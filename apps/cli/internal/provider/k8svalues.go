@@ -147,6 +147,7 @@ func maybeGetSecrets(secretValuesPath string, enabled bool) O.Option[domain.EnvS
 	))
 
 	if err != nil {
+		fmt.Println("err", err)
 		return O.None[domain.EnvString]()
 	}
 
@@ -197,7 +198,7 @@ func getEnvSecretsFromDeclarationMap(secretsDeclarationMap secretsDeclarationMap
 				ctx, &secretmanagerpb.AccessSecretVersionRequest{Name: secretVersion})
 
 			if err != nil {
-				llog.L.Error("Unable to get secret value", "secret", envName)
+				llog.L.Error("Unable to get secret value", "secret", envName, "err", err)
 				return
 			}
 			envStringMutex.Lock()
