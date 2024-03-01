@@ -30,21 +30,21 @@ if (!(process.platform in GOOS_MAP)) {
 
 const arch = GOARCH_MAP[process.arch]
 const platform = GOOS_MAP[process.platform]
-// const installTarget = `gen-gopm3-${platform}-${arch}`
 const installTarget = `envii_build_${platform}_${arch}`
 
 const root = path.resolve(__dirname, "..")
 const distDir = path.resolve(root, "dist")
+const maybeAmdV1 = process.arch === "x64" ? "_v1" : ""
 
 const { exec } = require("child_process")
-exec(`cp ./dist/${installTarget}/envii dist/envii`, (err) => {
+exec(`cp ./dist/${installTarget}${maybeAmdV1}/envii dist/envii`, (err) => {
   if (err) {
     console.error(err)
     process.exit(1)
   }
 })
 
-exec(`cp ./dist/${installTarget}/envii ../.bin/envii`, (err) => {
+exec(`cp ./dist/${installTarget}${maybeAmdV1}/envii ../.bin/envii`, (err) => {
   if (err) {
     console.error(err)
     process.exit(1)
