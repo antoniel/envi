@@ -6,6 +6,10 @@ const path = require("path")
 let GOARCH_MAP = {
   arm64: "arm64",
   amd64: "amd64",
+  x86_64: "amd64",
+  x64: "amd64",
+  ia32: "386",
+  i386: "386",
 }
 
 let GOOS_MAP = {
