@@ -39,3 +39,10 @@ exec(`cp ./dist/${installTarget}/envii dist/envii`, (err) => {
     process.exit(1)
   }
 })
+
+exec(`cp ./dist/${installTarget}/envii ../.bin/envii`, (err) => {
+  if (err) {
+    console.error(err)
+    process.exit(1)
+  }
+})

@@ -6,7 +6,9 @@
     ".npm/"
   ],
   "scripts": {
-    "postinstall": "node .npm/install.js"
+    "postinstall": "node .npm/install.js",
+    "package:build": "goreleaser release --snapshot --clean",
+    "package:release": "npm version patch --force  && npm publish"
   },
   "bin": {
     "envii": "dist/envii"
