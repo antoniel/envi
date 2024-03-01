@@ -73,7 +73,7 @@ func PullCmdFunc(cmd *cobra.Command, args []string) error {
 	)
 	if err != nil {
 		llog.L.Error(err)
-		return nil
+		return err
 	}
 
 	return nil
