@@ -1,5 +1,5 @@
 {
-  "version": "0.0.3",
+  "version": "0.0.31",
   "name": "envii",
   "files": [
     "dist/envii",
@@ -8,7 +8,7 @@
   "scripts": {
     "postinstall": "node .npm/install.js",
     "package:build": "goreleaser release --snapshot --clean",
-    "package:release": "npm version patch --force  && npm publish"
+    "package:workflow": "npm version patch --force && bun package:build && npm publish"
   },
   "bin": {
     "envii": "dist/envii"
