@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"time"
 
 	E "github.com/IBM/fp-go/either"
@@ -40,7 +41,7 @@ func GetPullFn(cmd *cobra.Command) (provider.PullFn, domain.Provider, error) {
 	k8sValuesPath := cmd.Flag("k8s-values-path").Value.String()
 	secretsDeclaration := cmd.Flag("secrets-declaration").Value.String()
 
-	if !utils.Contains(validProviders, providerType) {
+	if slices.Contains(validProviders, providerType) {
 		return nil, "", errors.New("❌ invalid provider type")
 	}
 
