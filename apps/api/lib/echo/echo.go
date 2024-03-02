@@ -1,4 +1,4 @@
-package main
+package libEcho
 
 import (
 	"encoding/json"

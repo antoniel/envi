@@ -6,6 +6,8 @@
     "npm/"
   ],
   "scripts": {
+    "cli": "go run ./apps/cli/main.go",
+    "api": "go run ./apps/api/main.go",
     "postinstall": "node npm/install.js",
     "package:build": "goreleaser release --snapshot --clean",
     "package:workflow": "npm version patch --force && bun package:build && npm publish"

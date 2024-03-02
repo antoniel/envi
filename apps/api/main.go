@@ -2,6 +2,7 @@ package main
 
 import (
 	"envii/apps/api/initializers"
+	libEcho "envii/apps/api/lib/echo"
 
 	"github.com/labstack/echo"
 )
@@ -13,7 +14,7 @@ func init() {
 
 func main() {
 	e := echo.New()
-	RegisterMiddlewares(e)
-	RegisterRoutes(e)
+	libEcho.RegisterMiddlewares(e)
+	libEcho.RegisterRoutes(e)
 	e.Logger.Fatal(e.Start(":1323"))
 }
