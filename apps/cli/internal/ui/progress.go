@@ -27,6 +27,15 @@ func (m model) Init() tea.Cmd {
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	// handle esc and <Ctrl+c>
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "ctrl+c", "esc", "ctrl+d":
+			os.Exit(0)
+			return m, tea.Quit
+		default:
+			return m, nil
+		}
 	case MsgQuit:
 		return m, tea.Quit
 	case tea.WindowSizeMsg:
