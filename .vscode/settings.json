@@ -2,7 +2,7 @@
   "workbench.colorTheme": "Aura Dark",
   "files.exclude": {
     "tmp": false,
-    "apps/cli": false
+    "apps/api": false
   },
   "cSpell.words": ["envii", "llog"]
 }

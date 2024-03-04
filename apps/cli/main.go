@@ -1,10 +1,10 @@
 package main
 
 import (
-	"envii/apps/cli/cli/auth"
-	"envii/apps/cli/cli/pull"
-	"envii/apps/cli/cli/push"
-	"envii/apps/cli/cli/undo"
+	"envii/apps/cli/cmd/auth"
+	"envii/apps/cli/cmd/pull"
+	"envii/apps/cli/cmd/push"
+	"envii/apps/cli/cmd/undo"
 	"fmt"
 	"os"
 

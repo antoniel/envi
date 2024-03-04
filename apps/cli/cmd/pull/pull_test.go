@@ -1,7 +1,7 @@
 package pull_test
 
 import (
-	"envii/apps/cli/cli/pull"
+	"envii/apps/cli/cmd/pull"
 	"os"
 	"testing"
 
