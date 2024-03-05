@@ -1,11 +1,5 @@
 package domain
 
-type ProviderTemplate struct {
-	Name ProviderName
-	Pull PullProvider
-	Push PushProvider
-}
-
 type ProviderName string
 type Provider interface {
 	GetName() ProviderName
