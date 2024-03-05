@@ -27,13 +27,64 @@ var PullCmd = &cobra.Command{
 }
 
 type EnvSyncState struct {
-	RemoteEnvValues string
-	LocalEnvValues  string
+	RemoteEnvValues domain.EnvString
+	LocalEnvValues  domain.EnvString
+	/*
+		EnvResult is the result of the last `envii pull` command.
+		this is the field that is used when saving the .env
+	*/
+	EnvResult       domain.EnvString
 	DiffRemoteLocal domain.Diff
 }
 
+func PullCmdFunc(cmd *cobra.Command, args []string) error {
+	pullFn, provider, errPullFn := GetPullFn(cmd)
+
+	if errPullFn != nil {
+		return errPullFn
+	}
+
+	err := F.Pipe3(
+		SyncEnvState(pullFn, provider),
+		E.Chain(backupEnvFileIOEither),
+		E.Chain(SaveEnvResultIOEither(storage.LocalHistory, os.WriteFile)),
+		E.Fold(F.Identity, handleRight),
+	)
+	if err != nil {
+		llog.L.Error(err)
+		return err
+	}
+
+	return nil
+}
+
+func SyncEnvState(pullFn provider.PullFn, provider domain.Provider) E.Either[error, EnvSyncState] {
+	remoteEnvSetter := utils.Setter[domain.EnvString, EnvSyncState]("RemoteEnvValues")
+	localEnvSetter := utils.Setter[domain.EnvString, EnvSyncState]("LocalEnvValues")
+	diffEnvsSetter := utils.Setter[domain.Diff, EnvSyncState]("DiffRemoteLocal")
+	envResultSetter := utils.Setter[domain.EnvString, EnvSyncState]("EnvResult")
+
+	eitherEnvSyncState := F.Pipe4(
+		E.Do[error](EnvSyncState{}),
+		E.Bind(remoteEnvSetter, getRemoteEnvComputation(pullFn, provider)),
+		E.Bind(localEnvSetter, getLocalEnvComputation),
+		E.Bind(envResultSetter, envResultComputation(false)),
+		E.Bind(diffEnvsSetter, diffEnvsComputation),
+	)
+	return eitherEnvSyncState
+}
+
+func envResultComputation(preserveEnvResult bool) func(s EnvSyncState) E.Either[error, domain.EnvString] {
+	return func(s EnvSyncState) E.Either[error, domain.EnvString] {
+		if preserveEnvResult {
+			return E.Right[error](domain.MergeEnvsPreservingFirst(s.LocalEnvValues, s.RemoteEnvValues))
+		}
+		return E.Right[error](s.RemoteEnvValues)
+	}
+}
+
 func GetPullFn(cmd *cobra.Command) (provider.PullFn, domain.Provider, error) {
-	noop := func() (string, error) {
+	noop := func() (domain.EnvString, error) {
 		return "", nil
 	}
 	validProviders := []string{"zipper", "k8s"}
@@ -50,49 +101,14 @@ func GetPullFn(cmd *cobra.Command) (provider.PullFn, domain.Provider, error) {
 			return noop, "", errors.New("❌ k8s-values-path flag is required when using k8s provider")
 		}
 		return provider.K8sPullRemoteEnvValuesConstructor(
-			k8sValuesPath,
-			secretsDeclaration,
-			provider.WithPullSecrets{
-				Enabled: secretsDeclaration != "",
-			}), "k8s", nil
+				k8sValuesPath,
+				secretsDeclaration,
+				provider.WithPullSecrets{Enabled: secretsDeclaration != ""}),
+			"k8s",
+			nil
 	}
 
 	return provider.ZipperPullRemoteEnvValues, "Zipper", nil
-}
-
-func PullCmdFunc(cmd *cobra.Command, args []string) error {
-	pullFn, provider, errPullFn := GetPullFn(cmd)
-
-	if errPullFn != nil {
-		return errPullFn
-	}
-
-	err := F.Pipe3(
-		SyncEnvState(pullFn, provider),
-		E.Chain(backupEnvFileIOEither),
-		E.Chain(SaveEnvFileIOEither(storage.LocalHistory, os.WriteFile)),
-		E.Fold(F.Identity, handleRight),
-	)
-	if err != nil {
-		llog.L.Error(err)
-		return err
-	}
-
-	return nil
-}
-
-func SyncEnvState(pullFn provider.PullFn, provider domain.Provider) E.Either[error, EnvSyncState] {
-	remoteEnvSetter := utils.Setter[string, EnvSyncState]("RemoteEnvValues")
-	localEnvSetter := utils.Setter[string, EnvSyncState]("LocalEnvValues")
-	diffEnvsSetter := utils.Setter[domain.Diff, EnvSyncState]("DiffRemoteLocal")
-
-	eitherEnvSyncState := F.Pipe3(
-		E.Do[error](EnvSyncState{}),
-		E.Bind(remoteEnvSetter, fetchRemoteEnvComputation(pullFn, provider)),
-		E.Bind(localEnvSetter, getLocalEnvComputation),
-		E.Bind(diffEnvsSetter, diffEnvsComputation),
-	)
-	return eitherEnvSyncState
 }
 
 func backupEnvFileIOEither(s EnvSyncState) E.Either[error, EnvSyncState] {
@@ -114,7 +130,7 @@ func backupEnvFileIOEither(s EnvSyncState) E.Either[error, EnvSyncState] {
 
 type writeFileFn = func(string, []byte, os.FileMode) error
 
-func SaveEnvFileIOEither(storageImp storage.LocalHistorySave, writeFile writeFileFn) func(s EnvSyncState) E.Either[error, EnvSyncState] {
+func SaveEnvResultIOEither(storageImp storage.LocalHistorySave, writeFile writeFileFn) func(s EnvSyncState) E.Either[error, EnvSyncState] {
 	return func(s EnvSyncState) E.Either[error, EnvSyncState] {
 		// Should keep the current .env file in storage.history before saving the new one
 		// This is to allow the user to undo the operation
@@ -128,7 +144,7 @@ func SaveEnvFileIOEither(storageImp storage.LocalHistorySave, writeFile writeFil
 
 		err := writeFile(
 			filepath.Join(wd, ".env"),
-			[]byte(s.RemoteEnvValues), 0666)
+			[]byte(s.EnvResult), 0666)
 
 		if err != nil {
 			return E.Left[EnvSyncState](fmt.Errorf("❌ error while saving .env file:\n%s", wdErr))
@@ -137,8 +153,8 @@ func SaveEnvFileIOEither(storageImp storage.LocalHistorySave, writeFile writeFil
 	}
 }
 
-func fetchRemoteEnvComputation(fetchRemoteValueImplementation func() (string, error), provider domain.Provider) func(s EnvSyncState) E.Either[error, string] {
-	return func(s EnvSyncState) E.Either[error, string] {
+func getRemoteEnvComputation(fetchRemoteValueImplementation func() (domain.EnvString, error), provider domain.Provider) func(s EnvSyncState) E.Either[error, domain.EnvString] {
+	return func(s EnvSyncState) E.Either[error, domain.EnvString] {
 		isCI := os.Getenv("CI") == "true"
 		if !isCI {
 			doneFn := ui.ProgressBar("Fetching remote .env file...", provider)
@@ -147,15 +163,15 @@ func fetchRemoteEnvComputation(fetchRemoteValueImplementation func() (string, er
 
 		remoteEnvValues, err := fetchRemoteValueImplementation()
 		if err != nil {
-			return E.Left[string](err)
+			return E.Left[domain.EnvString](err)
 		}
 		return E.Right[error](remoteEnvValues)
 	}
 }
-func getLocalEnvComputation(s EnvSyncState) E.Either[error, string] {
+func getLocalEnvComputation(s EnvSyncState) E.Either[error, domain.EnvString] {
 	localEnvFile, err := getCurrentEnvValues()
 	if err != nil {
-		return E.Left[string](err)
+		return E.Left[domain.EnvString](err)
 	}
 	return E.Right[error](localEnvFile)
 }
@@ -197,7 +213,7 @@ func showEnvUpdateSuccessMessage(diffPrintStr string) {
 var ErrEnvFileNotFound = errors.New("- env file not found")
 var ErrUnableToCreateEnvFile = errors.New("- unable to create env file")
 
-func getCurrentEnvValues() (string, error) {
+func getCurrentEnvValues() (domain.EnvString, error) {
 	currentDir, err := os.Getwd()
 	if err != nil {
 		return "", err
@@ -206,16 +222,16 @@ func getCurrentEnvValues() (string, error) {
 	envFile, err := os.ReadFile(currentDir + "/.env")
 
 	if errors.Is(err, os.ErrNotExist) {
-		return string(""), nil
+		return domain.EnvString(""), nil
 	}
 
 	if err != nil {
 		return "", err
 	}
 
-	return string(envFile), nil
+	return domain.EnvString(envFile), nil
 }
 
-func diffEnvValues(local string, remote string) domain.Diff {
+func diffEnvValues(local, remote domain.EnvString) domain.Diff {
 	return domain.DiffEnvs(domain.EnvString(local), domain.EnvString(remote))
 }

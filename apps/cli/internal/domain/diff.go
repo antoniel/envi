@@ -2,6 +2,7 @@ package domain
 
 import (
 	"envii/apps/cli/internal/llog"
+	"sort"
 	"strings"
 
 	A "github.com/IBM/fp-go/array"
@@ -95,16 +96,15 @@ func (d Diff) PrettyPrint() string {
 	return strings.Join([]string{additions, deletions}, "\n")
 }
 
+func getValueFromEnvRow(row string) string {
+	return strings.Split(row, "=")[1]
+}
+func getKeysFromEnvRow(row string) string {
+	return strings.Split(row, "=")[0]
+}
 func DiffEnvs(local, remote EnvString) Diff {
 	localRows := GetValidRows(local)
 	remoteRows := GetValidRows(remote)
-
-	getValueFromEnvRow := func(row string) string {
-		return strings.Split(row, "=")[1]
-	}
-	getKeysFromEnvRow := func(row string) string {
-		return strings.Split(row, "=")[0]
-	}
 
 	localSet := make(map[string]string)
 	for _, k := range localRows {
@@ -140,4 +140,34 @@ func DiffEnvs(local, remote EnvString) Diff {
 		Additions: remoteMinusLocal,
 		Deletions: localMinusRemote,
 	}
+}
+
+func MergeEnvsPreservingFirst(a, b EnvString) EnvString {
+	validRowsA := GetValidRows(a)
+	validRowsB := GetValidRows(b)
+	envMap := make(map[string]string)
+
+	for _, row := range validRowsA {
+		key := getKeysFromEnvRow(row)
+		val := getValueFromEnvRow(row)
+		envMap[key] = val
+	}
+
+	for _, row := range validRowsB {
+		if _, found := envMap[getKeysFromEnvRow(row)]; !found {
+			envMap[getKeysFromEnvRow(row)] = getValueFromEnvRow(row)
+		}
+	}
+
+	envList := []string{}
+	for k, v := range envMap {
+		envList = append(envList, k+"="+v)
+	}
+
+	sort.Strings(envList)
+	return sliceToEnvString(envList)
+}
+
+func sliceToEnvString(slice []string) EnvString {
+	return EnvString(strings.Join(slice, "\n"))
 }

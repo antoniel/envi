@@ -30,7 +30,7 @@ func TestSaveEnvFileIOEither(t *testing.T) {
 			didSave = true
 			return nil
 		})
-		sut := pull.SaveEnvFileIOEither(mockStorage, func(string, []byte, os.FileMode) error {
+		sut := pull.SaveEnvResultIOEither(mockStorage, func(string, []byte, os.FileMode) error {
 			return nil
 		})
 

@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"envii/apps/cli/internal/domain"
 	"envii/apps/cli/internal/llog"
 	"envii/apps/cli/internal/storage"
 	"envii/apps/cli/internal/ui"
@@ -13,7 +14,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 )
 
-type PullFn func() (string, error)
+type PullFn func() (domain.EnvString, error)
 
 func getAccessToken(applicationDataPath string) E.Either[error, string] {
 	persistedToken, err := storage.AccessToken.Get()

@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"envii/apps/cli/internal/domain"
 	"fmt"
 	"os"
 )
@@ -17,13 +18,13 @@ type localHistory struct{}
 // using the `envii pull` command.
 var LocalHistory = localHistory{}
 
-func (localHistory) Get() (string, error) {
+func (localHistory) Get() (domain.EnvString, error) {
 	path := GetApplicationDataPath()
 	token, err := os.ReadFile(path + "/" + local_history_file_name)
 	if err != nil {
 		return "", err
 	}
-	return string(token), nil
+	return domain.EnvString(token), nil
 }
 
 var ErrUnableToPersistLocalHistory = fmt.Errorf("unable to persist local history")

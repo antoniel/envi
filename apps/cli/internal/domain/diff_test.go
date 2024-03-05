@@ -140,3 +140,25 @@ func TestEqDiff(t *testing.T) {
 	}
 
 }
+
+func TestMergeEnvsPreservingFirst(t *testing.T) {
+	type args struct {
+		a EnvString
+		b EnvString
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{name: "base", args: args{a: "A=1\nB=2\nC=3\n", b: "A=4\nB=5\nD=6\n"}, want: "A=1\nB=2\nC=3\nD=6"},
+		{name: "addition", args: args{a: "A=1\nB=2\nC=3\n", b: "\nD=4"}, want: "A=1\nB=2\nC=3\nD=4"},
+		{name: "deletion", args: args{a: "A=1\nC=3\n", b: ""}, want: "A=1\nC=3"},
+		{name: "empty", args: args{a: "", b: ""}, want: ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, MergeEnvsPreservingFirst(tt.args.a, tt.args.b))
+		})
+	}
+}

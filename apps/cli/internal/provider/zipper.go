@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"envii/apps/cli/internal/domain"
 	"envii/apps/cli/internal/storage"
 	"fmt"
 	"time"
@@ -13,7 +14,7 @@ func getZipperProviderDefaultUrl() string {
 	return "https://envii.zipper.run/api"
 }
 
-func ZipperPullRemoteEnvValues() (string, error) {
+func ZipperPullRemoteEnvValues() (domain.EnvString, error) {
 	path := storage.GetApplicationDataPath()
 	accessToken, err := E.Unwrap(GetOrAskAndPersistToken(path))
 	if err != nil {
@@ -34,7 +35,7 @@ func ZipperPullRemoteEnvValues() (string, error) {
 		return "", ErrUnableToFetchRemoteEnvValues
 	}
 	responseAsObject := *response.Result().(*map[string]interface{})
-	return responseAsObject["data"].(string), nil
+	return responseAsObject["data"].(domain.EnvString), nil
 }
 
 var errUnableToPushRemoteEnvValues = fmt.Errorf("❌ Unable to push remote environment values")
@@ -55,7 +56,7 @@ type envPushResponse struct {
 	} `json:"__meta"`
 }
 
-func ZipperPushLocalEnvsToRemote(localEnvValues string) E.Either[error, string] {
+func ZipperPushLocalEnvsToRemote(localEnvValues domain.EnvString) E.Either[error, string] {
 	path := storage.GetApplicationDataPath()
 	accessToken, err := E.Unwrap(GetOrAskAndPersistToken(path))
 	if err != nil {

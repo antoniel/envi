@@ -42,8 +42,8 @@ func (w WithPullSecrets) Apply(s *k8sPullOpts) {
 func K8sPullRemoteEnvValuesConstructor(
 	k8sValuesPath string,
 	secretValuesPath string,
-	opts ...K8sPullOption) func() (string, error) {
-	return func() (string, error) {
+	opts ...K8sPullOption) func() (domain.EnvString, error) {
+	return func() (domain.EnvString, error) {
 		var allOpts k8sPullOpts
 		for _, opt := range opts {
 			opt.Apply(&allOpts)
@@ -56,7 +56,7 @@ func K8sPullRemoteEnvValuesConstructor(
 			E.Chain(parseK8sValues),
 		)
 		mergedEnvs, err := E.Unwrap(mergeEnvs(localK8sFile, maybeSecretsEnv))
-		return string(mergedEnvs), err
+		return domain.EnvString(mergedEnvs), err
 	}
 }
 
