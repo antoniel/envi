@@ -7,7 +7,8 @@ import (
 	F "github.com/IBM/fp-go/function"
 )
 
-type EnvString string
+type _EnvString string
+type EnvString = _EnvString
 
 func GetValidRows(env EnvString) []string {
 	return F.Pipe2(
