@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"slices"
 	"time"
 
 	E "github.com/IBM/fp-go/either"
@@ -38,16 +37,18 @@ type EnvSyncState struct {
 }
 
 func PullCmdFunc(cmd *cobra.Command, args []string) error {
-	pullFn, provider, errPullFn := GetPullFn(cmd)
+	boolPreserveFlag := cmd.Flag("preserve").Value.String() == "true"
+	provider, errPullFn := provider.GetPullProvider(cmd)
+	fmt.Println("PROVICER", boolPreserveFlag)
 
 	if errPullFn != nil {
 		return errPullFn
 	}
 
 	err := F.Pipe3(
-		SyncEnvState(pullFn, SyncEnvStateOptions{
-			Preserve: false,
-			Provider: provider,
+		SyncEnvState(provider.PullRemoteEnvValues, SyncEnvStateOptions{
+			Preserve: boolPreserveFlag,
+			Provider: provider.GetName(),
 		}),
 		E.Chain(backupEnvFileIOEither),
 		E.Chain(SaveEnvResultIOEither(storage.LocalHistory, os.WriteFile)),
@@ -63,7 +64,7 @@ func PullCmdFunc(cmd *cobra.Command, args []string) error {
 
 type SyncEnvStateOptions struct {
 	Preserve bool
-	Provider domain.Provider
+	Provider domain.ProviderName
 }
 
 func SyncEnvState(pullFn provider.PullFn, opts SyncEnvStateOptions) E.Either[error, EnvSyncState] {
@@ -91,33 +92,33 @@ func envResultComputation(preserveEnvResult bool) func(s EnvSyncState) E.Either[
 	}
 }
 
-func GetPullFn(cmd *cobra.Command) (provider.PullFn, domain.Provider, error) {
-	noop := func() (domain.EnvString, error) {
-		return "", nil
-	}
-	validProviders := []string{"zipper", "k8s"}
-	providerType := cmd.Flag("provider").Value.String()
-	k8sValuesPath := cmd.Flag("k8s-values-path").Value.String()
-	secretsDeclaration := cmd.Flag("secrets-declaration").Value.String()
+// func GetPullFn(cmd *cobra.Command) (provider.PullFn, domain.ProviderName, error) {
+// 	noop := func() (domain.EnvString, error) {
+// 		return "", nil
+// 	}
+// 	validProviders := []string{"zipper", "k8s"}
+// 	providerType := cmd.Flag("provider").Value.String()
+// 	k8sValuesPath := cmd.Flag("k8s-values-path").Value.String()
+// 	secretsDeclaration := cmd.Flag("secrets-declaration").Value.String()
 
-	if !slices.Contains(validProviders, providerType) {
-		return nil, "", errors.New("❌ invalid provider type")
-	}
+// 	if !slices.Contains(validProviders, providerType) {
+// 		return nil, "", errors.New("❌ invalid provider type")
+// 	}
 
-	if providerType == "k8s" {
-		if k8sValuesPath == "" {
-			return noop, "", errors.New("❌ k8s-values-path flag is required when using k8s provider")
-		}
-		return provider.K8sPullRemoteEnvValuesConstructor(
-				k8sValuesPath,
-				secretsDeclaration,
-				provider.WithPullSecrets{Enabled: secretsDeclaration != ""}),
-			"k8s",
-			nil
-	}
+// 	if providerType == "k8s" {
+// 		if k8sValuesPath == "" {
+// 			return noop, "", errors.New("❌ k8s-values-path flag is required when using k8s provider")
+// 		}
+// 		return provider.K8sPullRemoteEnvValuesConstructor(
+// 				k8sValuesPath,
+// 				secretsDeclaration,
+// 				provider.WithPullSecrets{Enabled: secretsDeclaration != ""}),
+// 			"k8s",
+// 			nil
+// 	}
 
-	return provider.ZipperPullRemoteEnvValues, "Zipper", nil
-}
+// 	return provider.ZipperPullRemoteEnvValues, "Zipper", nil
+// }
 
 func backupEnvFileIOEither(s EnvSyncState) E.Either[error, EnvSyncState] {
 	if s.DiffRemoteLocal.HasNoDiff() {
@@ -161,7 +162,7 @@ func SaveEnvResultIOEither(storageImp storage.LocalHistorySave, writeFile writeF
 	}
 }
 
-func getRemoteEnvComputation(fetchRemoteValueImplementation func() (domain.EnvString, error), provider domain.Provider) func(s EnvSyncState) E.Either[error, domain.EnvString] {
+func getRemoteEnvComputation(fetchRemoteValueImplementation func() (domain.EnvString, error), provider domain.ProviderName) func(s EnvSyncState) E.Either[error, domain.EnvString] {
 	return func(s EnvSyncState) E.Either[error, domain.EnvString] {
 		isCI := os.Getenv("CI") == "true"
 		if !isCI {

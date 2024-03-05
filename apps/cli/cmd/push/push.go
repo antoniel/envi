@@ -19,19 +19,29 @@ var PushCmd = &cobra.Command{
 }
 
 func PushCmdFunc(cmd *cobra.Command, args []string) error {
-	pullFn, providerStr, errPullFn := pull.GetPullFn(cmd)
+	pullProvider, errPullFn := provider.GetPullProvider(cmd)
+	pushProvider, errPushFn := provider.GetPushProvider(cmd)
 
 	if errPullFn != nil {
 		return errPullFn
 	}
+	if errPushFn != nil {
+		return errPushFn
+	}
 	err := F.Pipe3(
-		pull.SyncEnvState(pullFn, providerStr),
+		pull.SyncEnvState(pullProvider.PullRemoteEnvValues, pull.SyncEnvStateOptions{
+			Preserve: false,
+			Provider: pullProvider.GetName(),
+		}),
 		E.Chain(validateIfEnvFileHasChanges),
 		E.Chain(func(s pull.EnvSyncState) E.Either[error, string] {
-			done := ui.ProgressBar("Pushing .env file to remote server", providerStr)
-			eitherPushLocalEnvValues := provider.ZipperPushLocalEnvsToRemote(s.LocalEnvValues)
+			done := ui.ProgressBar("Pushing .env file to remote server", pullProvider.GetName())
+			eitherPushLocalEnvValues := pushProvider.PushLocalEnvValues(s.LocalEnvValues)
+			if eitherPushLocalEnvValues != nil {
+				return E.Left[string](eitherPushLocalEnvValues)
+			}
 			done()
-			return eitherPushLocalEnvValues
+			return E.Right[error]("")
 		}),
 		E.Fold(
 			F.Identity,

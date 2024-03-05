@@ -18,7 +18,7 @@ type model struct {
 	progress  progress.Model
 	title     string
 	didFinish bool
-	provider  domain.Provider
+	provider  domain.ProviderName
 }
 
 func (m model) Init() tea.Cmd {
@@ -83,7 +83,7 @@ func tickCmd() tea.Cmd {
 	})
 }
 
-func ProgressBar(title string, provider domain.Provider) func() {
+func ProgressBar(title string, provider domain.ProviderName) func() {
 	defaultOpts := []progress.Option{
 		progress.WithDefaultGradient(),
 		progress.WithoutPercentage(),

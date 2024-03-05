@@ -18,8 +18,39 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func GetK8sProviderDefaultUrl() string {
-	return "https://k8s-provider.zipper.run/api"
+type k8sProvider struct {
+	Name                   domain.ProviderName
+	K8sValuesPath          string
+	K8sPullOptions         []K8sPullOption
+	SecretsDeclarationPath string
+}
+
+func NewK8sProvider(k8sValuesPath string, secretsDeclarationPath string, opts ...K8sPullOption) (domain.PushPullProvider, error) {
+	if k8sValuesPath == "" {
+		return nil, errors.New("❌ k8s-values-path flag is required when using k8s provider")
+	}
+	provider := k8sProvider{
+		Name:                   "k8s",
+		K8sValuesPath:          k8sValuesPath,
+		K8sPullOptions:         opts,
+		SecretsDeclarationPath: secretsDeclarationPath,
+	}
+	return provider, nil
+}
+
+func (k k8sProvider) GetName() domain.ProviderName {
+	return k.Name
+}
+
+func (k k8sProvider) PullRemoteEnvValues() (domain.EnvString, error) {
+	pullFn := K8sPullRemoteEnvValuesConstructor(k.K8sValuesPath, k.SecretsDeclarationPath, k.K8sPullOptions...)
+	res, err := pullFn()
+	return res, err
+}
+
+func (k k8sProvider) PushLocalEnvValues(localEnvValues domain.EnvString) error {
+	notImplementedErr := errors.New("k8s Provider does not implement write functionality")
+	return notImplementedErr
 }
 
 type K8sPullOption interface {

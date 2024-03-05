@@ -10,11 +10,35 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
+// var ZipperProvider = domain.Provider{Name: "Zipper"}
+// var ZipperProvider = zipperProvider{Name: "Zipper"}
+
+type zipperProvider struct {
+	Name domain.ProviderName
+}
+
+func NewZipperProvider() domain.PushPullProvider {
+	return zipperProvider{Name: "Zipper"}
+}
+
+func (d zipperProvider) GetName() domain.ProviderName {
+	return d.Name
+}
+
+func (zipperProvider) PullRemoteEnvValues() (domain.EnvString, error) {
+	return zipperPullRemoteEnvValues()
+}
+
+func (zipperProvider) PushLocalEnvValues(localEnvValues domain.EnvString) error {
+	_, err := E.Unwrap(zipperPushLocalEnvsToRemote(localEnvValues))
+	return err
+}
+
 func getZipperProviderDefaultUrl() string {
 	return "https://envii.zipper.run/api"
 }
 
-func ZipperPullRemoteEnvValues() (domain.EnvString, error) {
+func zipperPullRemoteEnvValues() (domain.EnvString, error) {
 	path := storage.GetApplicationDataPath()
 	accessToken, err := E.Unwrap(GetOrAskAndPersistToken(path))
 	if err != nil {
@@ -56,7 +80,7 @@ type envPushResponse struct {
 	} `json:"__meta"`
 }
 
-func ZipperPushLocalEnvsToRemote(localEnvValues domain.EnvString) E.Either[error, string] {
+func zipperPushLocalEnvsToRemote(localEnvValues domain.EnvString) E.Either[error, string] {
 	path := storage.GetApplicationDataPath()
 	accessToken, err := E.Unwrap(GetOrAskAndPersistToken(path))
 	if err != nil {
