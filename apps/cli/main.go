@@ -24,10 +24,11 @@ var RootCmd = &cobra.Command{
 }
 
 func init() {
-	RootCmd.AddCommand(pull.PullCmd)
 	RootCmd.PersistentFlags().StringP("provider", "p", "zipper", "Provider to use to pull the .env file: zipper | k8s")
 	RootCmd.PersistentFlags().StringP("k8s-values-path", "k", "", "Path to the k8s values file")
 	RootCmd.PersistentFlags().StringP("secrets-declaration", "s", "", "Path or identifier for the secrets declaration")
+	RootCmd.AddCommand(pull.PullCmd)
+	pull.PullCmd.Flags().Bool("preserve", false, "Preserve any existing value in the .env file")
 
 	RootCmd.AddCommand(auth.AuthCmd)
 	RootCmd.AddCommand(push.PushCmd)

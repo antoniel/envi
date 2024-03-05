@@ -45,7 +45,10 @@ func PullCmdFunc(cmd *cobra.Command, args []string) error {
 	}
 
 	err := F.Pipe3(
-		SyncEnvState(pullFn, provider),
+		SyncEnvState(pullFn, SyncEnvStateOptions{
+			Preserve: false,
+			Provider: provider,
+		}),
 		E.Chain(backupEnvFileIOEither),
 		E.Chain(SaveEnvResultIOEither(storage.LocalHistory, os.WriteFile)),
 		E.Fold(F.Identity, handleRight),
@@ -58,7 +61,12 @@ func PullCmdFunc(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func SyncEnvState(pullFn provider.PullFn, provider domain.Provider) E.Either[error, EnvSyncState] {
+type SyncEnvStateOptions struct {
+	Preserve bool
+	Provider domain.Provider
+}
+
+func SyncEnvState(pullFn provider.PullFn, opts SyncEnvStateOptions) E.Either[error, EnvSyncState] {
 	remoteEnvSetter := utils.Setter[domain.EnvString, EnvSyncState]("RemoteEnvValues")
 	localEnvSetter := utils.Setter[domain.EnvString, EnvSyncState]("LocalEnvValues")
 	diffEnvsSetter := utils.Setter[domain.Diff, EnvSyncState]("DiffRemoteLocal")
@@ -66,9 +74,9 @@ func SyncEnvState(pullFn provider.PullFn, provider domain.Provider) E.Either[err
 
 	eitherEnvSyncState := F.Pipe4(
 		E.Do[error](EnvSyncState{}),
-		E.Bind(remoteEnvSetter, getRemoteEnvComputation(pullFn, provider)),
+		E.Bind(remoteEnvSetter, getRemoteEnvComputation(pullFn, opts.Provider)),
 		E.Bind(localEnvSetter, getLocalEnvComputation),
-		E.Bind(envResultSetter, envResultComputation(false)),
+		E.Bind(envResultSetter, envResultComputation(opts.Preserve)),
 		E.Bind(diffEnvsSetter, diffEnvsComputation),
 	)
 	return eitherEnvSyncState
